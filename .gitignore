@@ -1,0 +1,29 @@
+# Python virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables and secrets
+.env
+.env.*
+
+# IDE settings
+.vscode/
+
+# Logs
+*.log
+
+# Temporary files
+.DS_Store
+Thumbs.db
+# Loan datasets and generated data
+*.csv
+
+# Saved machine learning models
+*.joblib
