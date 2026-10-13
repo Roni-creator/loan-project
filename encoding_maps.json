@@ -1,0 +1,44 @@
+{
+  "label": {
+    "bank_account_type": {
+      "Current": 0,
+      "Other": 1,
+      "Savings": 2,
+      "Unknown": 3
+    },
+    "employment_status_clients": {
+      "Contract": 0,
+      "Permanent": 1,
+      "Retired": 2,
+      "Self-Employed": 3,
+      "Student": 4,
+      "Unemployed": 5,
+      "Unknown": 6
+    }
+  },
+  "onehot": {
+    "bank_name_clients": {
+      "baseline": "Access Bank",
+      "kept": [
+        "Diamond Bank",
+        "EcoBank",
+        "FCMB",
+        "Fidelity Bank",
+        "First Bank",
+        "GT Bank",
+        "Heritage Bank",
+        "Keystone Bank",
+        "Skye Bank",
+        "Stanbic IBTC",
+        "Standard Chartered",
+        "Sterling Bank",
+        "UBA",
+        "Union Bank",
+        "Unity Bank",
+        "Unknown",
+        "Wema Bank",
+        "Zenith Bank"
+      ]
+    }
+  }
+}

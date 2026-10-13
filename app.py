@@ -9,6 +9,7 @@ import streamlit as st
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 
 import db
+import encoding
 
 
 PROJECT_DIR = Path(__file__).resolve().parent
@@ -189,6 +190,9 @@ def show_login() -> bool:
         return True
     st.title("Loan Creditworthiness")
     st.subheader("Sign in")
+    if not db.has_users():
+        st.warning("No accounts exist yet. Run `python db.py` in the project folder to "
+                   "create the database and demo accounts, then reload this page.")
     with st.form("login"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
@@ -205,7 +209,9 @@ def show_login() -> bool:
 def show_scoring(model_name: str, model, threshold: float, user_id=None):
     st.write(
         "Upload a CSV with the same engineered feature columns used to train the "
-        "selected model. A target column, if present, is ignored."
+        "selected model. Raw category text (e.g. bank_account_type = Savings, "
+        "bank_name_clients = GT Bank) is translated automatically. "
+        "A target column, if present, is ignored."
     )
     if FEATURE_COLUMNS_PATH.exists():
         columns = json.loads(FEATURE_COLUMNS_PATH.read_text(encoding="utf-8"))
@@ -222,7 +228,8 @@ def show_scoring(model_name: str, model, threshold: float, user_id=None):
         return
     try:
         input_frame = pd.read_csv(uploaded)
-        features = prepare_features(input_frame, model)
+        encoded = encoding.encode_raw_categoricals(input_frame, encoding.load_maps())
+        features = prepare_features(encoded, model)
         p_bad, p_good = bad_class_probability(model, features)
     except (ValueError, KeyError, pd.errors.ParserError) as error:
         st.error(f"Could not score this file: {error}")
@@ -257,7 +264,8 @@ def main():
     st.caption("Explore the prepared portfolio, review model performance, and score applications.")
 
     if not DATASET_PATH.exists():
-        st.error(f"Prepared dataset not found: {DATASET_PATH.name}")
+        st.error(f"Prepared dataset not found: {DATASET_PATH.name}. "
+                 "Run `python build_all.py` to generate the datasets and models.")
         st.stop()
     dataset = load_dataset(DATASET_PATH)
 
@@ -270,7 +278,8 @@ def main():
     model_name = st.sidebar.selectbox("Model", list(MODEL_ARTIFACTS))
     artifact = MODEL_ARTIFACTS[model_name]
     if not artifact.exists():
-        st.error(f"Model artifact not found: {artifact.name}")
+        st.error(f"Model artifact not found: {artifact.name}. "
+                 "Run `python build_all.py` to train and save the models.")
         st.stop()
 
     try:

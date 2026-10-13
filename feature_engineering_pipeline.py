@@ -11,6 +11,7 @@ treatment, encoding, and modelling.
 
 
 
+import json
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
@@ -117,45 +118,51 @@ def drop_high_missingness(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop(columns=cols_to_drop)
 
 
-def treat_missing_values(df: pd.DataFrame) -> pd.DataFrame:
+def fill_unknown_categories(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Numeric columns (<50% missing): median imputation.
-    Categorical columns (<50% missing): mode imputation.
-    Applied after high-missingness columns are already dropped.
+    Categorical columns: missing -> the explicit level "Unknown".
+    This is a fixed rule (no statistic is learned from the data), so it is safe to
+    apply before the train/test split. 25% of borrowers have no demographic record,
+    so "missing" is itself informative and is kept as its own level.
+
+    Numeric columns are deliberately NOT imputed here. They keep their NaNs and are
+    imputed with the TRAIN-set median inside the sklearn Pipeline (threshold_tuning.py),
+    so no test-set statistic ever leaks into training.
     """
     df = df.copy()
-    numeric_cols = df.select_dtypes(include="number").columns
-    categorical_cols = df.select_dtypes(include="object").columns
-
-    for col in numeric_cols:
-        if df[col].isna().any():
-            df[col] = df[col].fillna(df[col].median())
-
-    for col in categorical_cols:
-        if df[col].isna().any():
-            mode_val = df[col].mode(dropna=True)
-            if len(mode_val) > 0:
-                df[col] = df[col].fillna(mode_val.iloc[0])
-
+    for col in df.select_dtypes(include="object").columns:
+        df[col] = df[col].fillna("Unknown")
     return df
 
 
-def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
+def encode_categoricals(df: pd.DataFrame, maps_path: str | None = "encoding_maps.json") -> pd.DataFrame:
     """
     Binary categoricals -> label encoding.
     Multi-category nominal -> one-hot encoding, first dummy dropped
     (avoids multicollinearity in Logistic Regression), per Section 3.2.3.
+
+    The category -> code mappings are written to encoding_maps.json so the app can
+    translate raw category text in uploaded files to exactly the same codes.
     """
     df = df.copy()
+    maps = {"label": {}, "onehot": {}}
 
     for col in BINARY_CATEGORICAL_COLUMNS:
         if col in df.columns:
-            df[col] = LabelEncoder().fit_transform(df[col].astype(str))
+            le = LabelEncoder()
+            df[col] = le.fit_transform(df[col].astype(str))
+            maps["label"][col] = {c: int(i) for i, c in enumerate(le.classes_)}
 
     multi_cols = [c for c in MULTI_CATEGORICAL_COLUMNS if c in df.columns]
+    for col in multi_cols:
+        cats = sorted(df[col].dropna().astype(str).unique())
+        maps["onehot"][col] = {"baseline": cats[0], "kept": cats[1:]}   # drop_first drops cats[0]
     if multi_cols:
         df = pd.get_dummies(df, columns=multi_cols, drop_first=True)
 
+    if maps_path:
+        with open(maps_path, "w", encoding="utf-8") as f:
+            json.dump(maps, f, indent=2)
     return df
 
 
@@ -200,7 +207,7 @@ def run_pipeline(data_dir: str = DATA_DIR) -> pd.DataFrame:
     behavioural = engineer_behavioural_features(prev)
     merged = merge_datasets(demo, perf, behavioural)
     merged = drop_high_missingness(merged)
-    merged = treat_missing_values(merged)
+    merged = fill_unknown_categories(merged)
     merged = encode_categoricals(merged)
     return merged
 
@@ -226,7 +233,7 @@ if __name__ == "__main__":
 
     # VIF check, run before the collinear column is dropped, for the record.
     cleaned_for_vif = drop_high_missingness(raw_merged)
-    cleaned_for_vif = treat_missing_values(cleaned_for_vif)
+    cleaned_for_vif = fill_unknown_categories(cleaned_for_vif)
     vif_report = check_vif(cleaned_for_vif)
     print("VIF check (loanamount, totaldue, termdays):")
     print(vif_report)
@@ -235,7 +242,7 @@ if __name__ == "__main__":
     # Stage 2 output: cleaned, imputed, encoded, de-collinearised, model-ready.
     df = run_pipeline_model_ready()
     print(f"Stage 2 (model-ready) shape: {df.shape}")
-    print(f"Missing values remaining: {df.isna().sum().sum()} (should be 0)")
+    print(f"Numeric NaNs left for in-pipeline train-only imputation: {df.isna().sum().sum()}")
     print(f"'totaldue' present: {'totaldue' in df.columns} (should be False)")
     print()
     print(df.head(5))

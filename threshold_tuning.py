@@ -29,6 +29,7 @@ from sklearn.metrics import (accuracy_score, average_precision_score,
                              recall_score, roc_auc_score)
 from sklearn.model_selection import (StratifiedKFold, cross_val_predict,
                                      train_test_split)
+from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 
 # ------------------------------- CONFIG -------------------------------------
@@ -87,8 +88,7 @@ def load_data(path: str | None = None):
     non_numeric = X.select_dtypes(exclude="number").columns.tolist()
     if non_numeric:
         raise TypeError(f"Non-numeric feature columns (encode them first): {non_numeric}")
-    if X.isna().any().any():
-        raise ValueError("Missing values in features - impute before this step.")
+    # NaNs are allowed: the pipeline's imputer fills them with TRAIN-fold medians only.
     return X, y
 
 
@@ -100,7 +100,8 @@ def build_pipeline(model_name: str) -> Pipeline:
         "Random Forest": RandomForestClassifier(
             n_estimators=300, random_state=RANDOM_STATE, n_jobs=-1),
     }[model_name]
-    steps = [("scaler", StandardScaler())]
+    steps = [("imputer", SimpleImputer(strategy="median")),   # fit on train folds only
+             ("scaler", StandardScaler())]
     if USE_SMOTE:   # inside the pipeline: only ever applied to training folds
         steps.append(("smote", SMOTE(random_state=RANDOM_STATE)))
     steps.append(("clf", clf))

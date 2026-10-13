@@ -10,6 +10,7 @@ SAME 70/30 stratified split (random_state=42). Nothing is tuned on test.
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -55,10 +56,9 @@ def build_extra_features(data_dir="."):
     extra["loan_to_prior_avg"] = merged["loanamount"].values / extra["prior_avg_loanamount"]
     extra["has_prior_history"] = (merged["prior_loan_count"] > 0).astype(int)
 
-    extra = extra.replace([np.inf, -np.inf], np.nan)
-    for col in extra.columns:
-        extra[col] = extra[col].fillna(extra[col].median())
-    return extra
+    # NaNs are left in place: they are imputed with TRAIN-set medians inside the
+    # model pipeline, never with statistics computed on the full dataset.
+    return extra.replace([np.inf, -np.inf], np.nan)
 
 
 def evaluate(X, y, label):
@@ -66,6 +66,10 @@ def evaluate(X, y, label):
         X, y, test_size=0.30, random_state=RANDOM_STATE, stratify=y
     )
     results = {}
+
+    imp = SimpleImputer(strategy="median").fit(X_train)   # train-only medians
+    X_train = pd.DataFrame(imp.transform(X_train), columns=X_train.columns, index=X_train.index)
+    X_test = pd.DataFrame(imp.transform(X_test), columns=X_test.columns, index=X_test.index)
 
     scaler = StandardScaler()
     Xs = scaler.fit_transform(X_train)
