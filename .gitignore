@@ -27,3 +27,7 @@ Thumbs.db
 
 # Saved machine learning models
 *.joblib
+
+creditscore.db
+db_*.csv
+old/

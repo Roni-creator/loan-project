@@ -98,6 +98,9 @@ def merge_datasets(
     Customers with no prior loans get nulls on behavioural features,
     which are imputed (not dropped) in the next pipeline stage.
     """
+    # traindemographics has duplicate customerids (4,346 rows, 4,334 unique);
+    # a plain join would duplicate loan rows, so keep one row per customer.
+    demo = demo.drop_duplicates(subset="customerid", keep="first")
     merged = perf.merge(demo, on="customerid", how="left")
     merged = merged.merge(behavioural, on="customerid", how="left")
 

@@ -45,6 +45,13 @@ MODEL_FILES = {                      # <-- confirm these match the filenames the
     "Random Forest": "random_forest_pipeline.joblib",
 }
 BAD, GOOD = 0, 1
+
+# Willingness-to-pay = behavioural proxies from prior loan history; everything else = ability / profile.
+WILLINGNESS = {
+    "prior_loan_count", "prior_default_rate", "rollover_count",
+    "days_to_first_repayment", "loannumber", "prior_max_days_late",
+    "prior_ontime_rate", "has_prior_history",
+}
 THRESHOLD_GRID = np.round(np.arange(0.05, 0.951, 0.005), 3)
 # ----------------------------------------------------------------------------
 
@@ -156,6 +163,7 @@ def main():
 
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
     thresholds, rows = {}, []
+    importance = {}
 
     for name in MODEL_FILES:
         pipe = build_pipeline(name)
@@ -176,6 +184,12 @@ def main():
             rows.append({"model": name, "setting": label,
                          **bad_class_metrics(y_test, p_good_test, t)})
 
+        clf = pipe.named_steps["clf"]
+        if name == "Logistic Regression":
+            importance["lr_coefficient"] = clf.coef_[0]      # on scaled features; + = toward Good
+        else:
+            importance["rf_importance"] = clf.feature_importances_
+
         # 3) artifacts
         joblib.dump(pipe, OUT_DIR / MODEL_FILES[name])
         pd.DataFrame({
@@ -185,6 +199,17 @@ def main():
             "predicted": predict_good(p_good_test, thr),
         }).to_csv(OUT_DIR / f"{name.lower().replace(' ', '_')}_test_predictions.csv",
                   index=False)
+
+    # held-out test set + feature importance, from the SAME deployed pipelines
+    X_test.assign(**{TARGET_COL: y_test.values}).to_csv(OUT_DIR / "test_set.csv", index=False)
+    fi = pd.DataFrame({"feature": X.columns, **importance})
+    fi["lr_abs_coefficient"] = fi["lr_coefficient"].abs()
+    fi["lr_direction"] = np.where(fi["lr_coefficient"] > 0, "Lowers default risk", "Raises default risk")
+    fi["lr_rank"] = fi["lr_abs_coefficient"].rank(ascending=False).astype(int)
+    fi["rf_rank"] = fi["rf_importance"].rank(ascending=False).astype(int)
+    fi["driver_type"] = np.where(fi["feature"].isin(WILLINGNESS),
+                                 "Willingness to pay", "Ability to pay / profile")
+    fi.sort_values("rf_rank").to_csv(OUT_DIR / "feature_importance.csv", index=False)
 
     # keep thresholds.json a plain {model: float} map so consumers can't trip on extra keys
     (OUT_DIR / "thresholds.json").write_text(json.dumps(thresholds, indent=2))

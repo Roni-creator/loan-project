@@ -8,12 +8,22 @@ import pandas as pd
 import streamlit as st
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 
+import db
+
 
 PROJECT_DIR = Path(__file__).resolve().parent
-DATASET_PATH = PROJECT_DIR / "model_ready_dataset.csv"
+DATASET_PATH = PROJECT_DIR / "model_ready_extended.csv"   # the 36-feature set the models are trained on
+FEATURE_COLUMNS_PATH = PROJECT_DIR / "feature_columns.json"
 TEST_SET_PATH = PROJECT_DIR / "test_set.csv"
 IMPORTANCE_PATH = PROJECT_DIR / "feature_importance.csv"
 THRESHOLDS_PATH = PROJECT_DIR / "thresholds.json"
+
+# Role -> pages that role may open (maps to the three dashboards in the proposal)
+ROLE_PAGES = {
+    "business_manager": ["Portfolio overview"],
+    "credit_analyst": ["Portfolio overview", "Model evaluation"],
+    "loan_officer": ["Score applications"],
+}
 
 MODEL_ARTIFACTS = {
     "Logistic Regression": PROJECT_DIR / "logistic_regression_pipeline.joblib",
@@ -173,11 +183,39 @@ def show_evaluation(test_set: pd.DataFrame, model_name: str, model, threshold: f
     st.dataframe(pd.DataFrame(report).transpose(), use_container_width=True)
 
 
-def show_scoring(model_name: str, model, threshold: float):
+def show_login() -> bool:
+    """Render the login form; return True once a user is authenticated."""
+    if st.session_state.get("user"):
+        return True
+    st.title("Loan Creditworthiness")
+    st.subheader("Sign in")
+    with st.form("login"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Sign in")
+    if submitted:
+        user = db.verify_user(username.strip(), password)
+        if user:
+            st.session_state["user"] = user
+            st.rerun()
+        st.error("Invalid username or password.")
+    return False
+
+
+def show_scoring(model_name: str, model, threshold: float, user_id=None):
     st.write(
         "Upload a CSV with the same engineered feature columns used to train the "
         "selected model. A target column, if present, is ignored."
     )
+    if FEATURE_COLUMNS_PATH.exists():
+        columns = json.loads(FEATURE_COLUMNS_PATH.read_text(encoding="utf-8"))
+        st.download_button(
+            "Download blank template (required columns)",
+            data=(",".join(columns) + "\n").encode("utf-8"),
+            file_name="scoring_template.csv", mime="text/csv",
+        )
+        st.caption(f"Models need all {len(columns)} feature columns. "
+                   "Use the extended dataset format, not the 26-column baseline.")
     uploaded = st.file_uploader("Applications CSV", type=["csv"], key="score_upload")
     if uploaded is None:
         st.info("Upload a CSV to generate predictions.")
@@ -196,6 +234,11 @@ def show_scoring(model_name: str, model, threshold: float):
     results["prediction"] = ["Good" if probability >= threshold else "Bad"
                              for probability in p_good]
     st.dataframe(results.head(100), use_container_width=True)
+    if st.button("Save predictions to database"):
+        feature_rows = features.head(500).to_dict("records")
+        for row, pb in zip(feature_rows, p_bad[:500]):
+            db.log_prediction(row, model_name, float(pb), threshold, user_id=user_id)
+        st.success(f"Saved {len(feature_rows)} predictions.")
     st.download_button(
         "Download scored CSV",
         data=results.to_csv(index=False).encode("utf-8"),
@@ -206,6 +249,10 @@ def show_scoring(model_name: str, model, threshold: float):
 
 def main():
     st.set_page_config(page_title="Loan Creditworthiness", page_icon="📊", layout="wide")
+    db.init_db()
+    if not show_login():
+        st.stop()
+    user = st.session_state["user"]
     st.title("Loan Creditworthiness")
     st.caption("Explore the prepared portfolio, review model performance, and score applications.")
 
@@ -214,7 +261,11 @@ def main():
         st.stop()
     dataset = load_dataset(DATASET_PATH)
 
-    pages = ["Portfolio overview", "Model evaluation", "Score applications"]
+    st.sidebar.write(f"Signed in as **{user['username']}** ({user['role'].replace('_', ' ')})")
+    if st.sidebar.button("Sign out"):
+        st.session_state.pop("user", None)
+        st.rerun()
+    pages = ROLE_PAGES[user["role"]]
     page = st.sidebar.radio("Workspace", pages)
     model_name = st.sidebar.selectbox("Model", list(MODEL_ARTIFACTS))
     artifact = MODEL_ARTIFACTS[model_name]
@@ -239,7 +290,7 @@ def main():
             st.stop()
         show_evaluation(load_dataset(TEST_SET_PATH), model_name, model, threshold)
     else:
-        show_scoring(model_name, model, threshold)
+        show_scoring(model_name, model, threshold, user_id=user["user_id"])
 
 
 if __name__ == "__main__":

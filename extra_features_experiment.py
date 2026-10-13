@@ -87,6 +87,17 @@ def evaluate(X, y, label):
     return rf, X_train.columns
 
 
+def build_extended(out="model_ready_extended.csv"):
+    """Rebuild model_ready_extended.csv from model_ready_dataset.csv (no model fitting)."""
+    base = pd.read_csv("model_ready_dataset.csv")
+    extra = build_extra_features()
+    assert len(extra) == len(base), "row count mismatch -- alignment broken"
+    X_ext = pd.concat([base.drop(columns=["good_bad_flag"]).reset_index(drop=True),
+                       extra.reset_index(drop=True)], axis=1)
+    X_ext.assign(good_bad_flag=base["good_bad_flag"]).to_csv(out, index=False)
+    return X_ext
+
+
 def main():
     base = pd.read_csv("model_ready_dataset.csv")
     y = base["good_bad_flag"].map({"Good": 1, "Bad": 0})

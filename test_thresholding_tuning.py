@@ -51,6 +51,7 @@ def test_end_to_end_artifacts(tmp_path, monkeypatch):
     df.to_csv(csv, index=False)
     monkeypatch.setattr(tt, "DATA_PATH", str(csv))
     monkeypatch.setattr(tt, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(tt, "DROP_COLS", ["customerid"])
     tt.main()
 
     thr = json.loads((tmp_path / "thresholds.json").read_text())
