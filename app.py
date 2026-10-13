@@ -10,6 +10,7 @@ from sklearn.metrics import classification_report, confusion_matrix, f1_score
 
 import db
 import encoding
+import login
 
 
 PROJECT_DIR = Path(__file__).resolve().parent
@@ -18,13 +19,6 @@ FEATURE_COLUMNS_PATH = PROJECT_DIR / "feature_columns.json"
 TEST_SET_PATH = PROJECT_DIR / "test_set.csv"
 IMPORTANCE_PATH = PROJECT_DIR / "feature_importance.csv"
 THRESHOLDS_PATH = PROJECT_DIR / "thresholds.json"
-
-# Role -> pages that role may open (maps to the three dashboards in the proposal)
-ROLE_PAGES = {
-    "business_manager": ["Portfolio overview"],
-    "credit_analyst": ["Portfolio overview", "Model evaluation"],
-    "loan_officer": ["Score applications"],
-}
 
 MODEL_ARTIFACTS = {
     "Logistic Regression": PROJECT_DIR / "logistic_regression_pipeline.joblib",
@@ -184,28 +178,6 @@ def show_evaluation(test_set: pd.DataFrame, model_name: str, model, threshold: f
     st.dataframe(pd.DataFrame(report).transpose(), use_container_width=True)
 
 
-def show_login() -> bool:
-    """Render the login form; return True once a user is authenticated."""
-    if st.session_state.get("user"):
-        return True
-    st.title("Loan Creditworthiness")
-    st.subheader("Sign in")
-    if not db.has_users():
-        st.warning("No accounts exist yet. Run `python db.py` in the project folder to "
-                   "create the database and demo accounts, then reload this page.")
-    with st.form("login"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submitted = st.form_submit_button("Sign in")
-    if submitted:
-        user = db.verify_user(username.strip(), password)
-        if user:
-            st.session_state["user"] = user
-            st.rerun()
-        st.error("Invalid username or password.")
-    return False
-
-
 def show_scoring(model_name: str, model, threshold: float, user_id=None):
     st.write(
         "Upload a CSV with the same engineered feature columns used to train the "
@@ -257,9 +229,7 @@ def show_scoring(model_name: str, model, threshold: float, user_id=None):
 def main():
     st.set_page_config(page_title="Loan Creditworthiness", page_icon="📊", layout="wide")
     db.init_db()
-    if not show_login():
-        st.stop()
-    user = st.session_state["user"]
+    user = login.require_login()
     st.title("Loan Creditworthiness")
     st.caption("Explore the prepared portfolio, review model performance, and score applications.")
 
@@ -269,11 +239,8 @@ def main():
         st.stop()
     dataset = load_dataset(DATASET_PATH)
 
-    st.sidebar.write(f"Signed in as **{user['username']}** ({user['role'].replace('_', ' ')})")
-    if st.sidebar.button("Sign out"):
-        st.session_state.pop("user", None)
-        st.rerun()
-    pages = ROLE_PAGES[user["role"]]
+    login.sidebar_account(user)
+    pages = login.allowed_pages(user)
     page = st.sidebar.radio("Workspace", pages)
     model_name = st.sidebar.selectbox("Model", list(MODEL_ARTIFACTS))
     artifact = MODEL_ARTIFACTS[model_name]

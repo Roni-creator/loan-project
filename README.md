@@ -47,6 +47,9 @@ python -m streamlit run app.py
 
 ## Accounts and roles
 
+The sign-in form and role rules are in [`login.py`](login.py); `app.py` calls it. Accounts
+are stored in `creditscore.db` (see `db.py`).
+
 `python build_all.py` (or `python db.py`) creates three **demo** accounts. They exist so a
 fresh install can log in; change them before showing anyone.
 
