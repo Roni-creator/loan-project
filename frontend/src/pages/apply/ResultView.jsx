@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { naira } from "../../lib/applyState.js";
 
 const OUTCOME = { likely: "Looks good", review: "Closer look", refer: "Review" };
@@ -91,6 +92,9 @@ export default function ResultView({ r, reference, consent, onConsent, onSubmit,
           <div className="banner likely">
             <b>Application submitted</b>
             <p>Your reference is <b style={{ display: "inline" }}>{reference}</b>. A loan officer will be in touch.</p>
+            <p style={{ marginTop: 8 }}>
+              <Link to="/dashboard" className="primary sm">Track it in my applications</Link>
+            </p>
           </div>
         ) : (
           <>

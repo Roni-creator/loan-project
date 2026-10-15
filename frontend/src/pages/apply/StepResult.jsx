@@ -25,7 +25,7 @@ export default function StepResult({ app, setRef, onBack, onReview, onRestart })
     setBusy(true);
     setMessage("");
     try {
-      const { reference } = await apiPost("/api/submit", { ...buildPayload(app), consent: true });
+      const { reference } = await apiPost("/api/applications", buildPayload(app));
       setRef(reference);
     } catch (e) {
       setMessage(e.message);
