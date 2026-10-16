@@ -7,7 +7,7 @@ export default function NotFound() {
       <Hero title="Page not found">That address does not exist.</Hero>
       <main className="wrap">
         <section className="card">
-          <Link to="/"><button type="button" className="primary">Go home</button></Link>
+          <Link to="/" className="primary">Go home</Link>
         </section>
       </main>
     </>

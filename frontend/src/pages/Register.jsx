@@ -4,12 +4,13 @@ import { useAuth } from "../lib/auth.jsx";
 import { useToast } from "../lib/toast.jsx";
 
 const USERNAME_RE = /^[A-Za-z0-9._-]{3,32}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Register() {
   const { user, loading, register } = useAuth();
   const notify = useToast();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ full_name: "", username: "", password: "", confirm: "" });
+  const [form, setForm] = useState({ full_name: "", username: "", email: "", password: "", confirm: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -18,6 +19,8 @@ export default function Register() {
   const validate = () => {
     if (!/^[A-Za-z0-9._-]{3,32}$/.test(form.username.trim()))
       return "Username must be 3-32 characters (letters, numbers, . _ -).";
+    if (!EMAIL_RE.test(form.email.trim()))
+      return "Enter a valid email address.";
     if (form.password.length < 8 || !/[A-Za-z]/.test(form.password) || !/\d/.test(form.password))
       return "Password must be at least 8 characters and include a letter and a number.";
     if (form.password !== form.confirm) return "The two passwords do not match.";
@@ -32,7 +35,7 @@ export default function Register() {
     setBusy(true);
     try {
       await register({
-        username: form.username.trim(), password: form.password,
+        username: form.username.trim(), email: form.email.trim(), password: form.password,
         full_name: form.full_name.trim() || null,
       });
       notify("Your account is ready. You can apply for a loan.", "success");
@@ -59,6 +62,11 @@ export default function Register() {
             Username
             <input type="text" autoComplete="username" value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })} />
+          </label>
+          <label className="f" style={{ marginTop: 12 }}>
+            Email
+            <input type="email" autoComplete="email" value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </label>
           <label className="f" style={{ marginTop: 12 }}>
             Password

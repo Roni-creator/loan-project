@@ -10,8 +10,8 @@ Routes
   GET  /                  the React app (or legacy static/index.html)
   GET  /api/meta          dropdown options, loan amounts/periods, lookup availability
   POST /api/score         application  -> outcome, reasons, what-if   (public; read-only)
-  GET  /api/sample-id     a random customer ID (demo helper)          (requires login)
-  POST /api/lookup        {customer_id} -> history + profile          (requires login)
+  GET  /api/sample-id     a random customer ID (staff review helper)  (credit_analyst / loan_officer)
+  POST /api/lookup        {customer_id} -> history + profile          (credit_analyst / loan_officer)
   POST /api/submit        application + consent -> DB record + reference (applicant only)
 
 Authentication, applicant-portal and staff endpoints live in api_routes.py and are
@@ -122,7 +122,7 @@ def score_application():
 
 # ---------------------------------------------------- authenticated API ------
 @app.get("/api/sample-id")
-@auth.require_auth
+@auth.require_roles("credit_analyst", "loan_officer")
 def sample_id():
     cid = core.sample_customer_id()
     if cid is None:
@@ -131,7 +131,7 @@ def sample_id():
 
 
 @app.post("/api/lookup")
-@auth.require_auth
+@auth.require_roles("credit_analyst", "loan_officer")
 def lookup():
     cid = str(_json_body().get("customer_id", "")).strip()
     if not cid or len(cid) > 64:

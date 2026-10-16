@@ -4,7 +4,7 @@
 
 const $ = (s, el = document) => el.querySelector(s);
 const fmt = n => Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
-const naira = n => "\u20A6" + fmt(n);
+const ksh = n => "KSh " + fmt(n);
 
 function h(tag, attrs = {}, ...kids) {
   const el = document.createElement(tag);
@@ -78,7 +78,7 @@ function historyGrid() {
     h("div", { class: "grid", style: "margin-top:12px" },
       numField("Typical days vs. due date", "avg_late", { min: -30, max: 120, step: 0.5, hint: "Negative = you usually pay early" }),
       numField("Longest delay (days)", "max_late", { min: -30, max: 400 }),
-      numField("Typical past loan (\u20A6)", "avg_amount", { min: 5000, max: 100000, step: 1000 }),
+      numField("Typical past loan (KSh)", "avg_amount", { min: 5000, max: 100000, step: 1000 }),
       numField("Typical past period (days)", "avg_term", { min: 7, max: 120 })));
 }
 
@@ -163,8 +163,8 @@ function step3(v) {
   const warn = h("p", { class: "msg" });
   const refresh = () => {
     metrics.replaceChildren(
-      h("div", { class: "metric" }, h("small", {}, "You borrow"), h("b", {}, naira(S.amount))),
-      h("div", { class: "metric" }, h("small", {}, `You repay (${Math.round(interest() * 100)}% interest)`), h("b", {}, naira(S.amount * (1 + interest())))),
+      h("div", { class: "metric" }, h("small", {}, "You borrow"), h("b", {}, ksh(S.amount))),
+      h("div", { class: "metric" }, h("small", {}, `You repay (${Math.round(interest() * 100)}% interest)`), h("b", {}, ksh(S.amount * (1 + interest())))),
       h("div", { class: "metric" }, h("small", {}, "Within"), h("b", {}, `${S.term} days`)));
     const seen = S.meta.pairs.some(([t, a]) => t === S.term && a === S.amount);
     warn.textContent = seen ? "" : "\u26A0\uFE0F This amount and period combination is uncommon, so the result may be less reliable.";
@@ -174,7 +174,7 @@ function step3(v) {
       S[key] = val; e.target.parentNode.querySelectorAll(".chip").forEach(c => c.classList.remove("sel"));
       e.target.classList.add("sel"); refresh(); } }, label(val))));
   v.append(h("h2", {}, "The loan you want"),
-    h("h3", {}, "Amount"), chips(S.meta.amounts, "amount", naira),
+    h("h3", {}, "Amount"), chips(S.meta.amounts, "amount", ksh),
     h("h3", {}, "Repayment period"), chips(S.meta.terms, "term", t => `${t} days`),
     metrics, warn,
     h("div", { class: "nav" }, h("button", { type: "button", onclick: () => go(2) }, "Back"),
@@ -187,7 +187,7 @@ function factorRows(factors) {
   const max = Math.max(...factors.map(f => Math.abs(f.value)), 0.01);
   return factors.map(f => {
     const w = Math.abs(f.value) / max * 50;
-    const bar = h("div", { class: "bar", style: `width:${w}%;${f.value >= 0 ? "left:50%" : `right:50%`};background:${f.driver === "willingness" ? "var(--orange)" : "var(--teal)"}` });
+    const bar = h("div", { class: "bar", style: `width:${w}%;${f.value >= 0 ? "left:50%" : `right:50%`};background:${f.driver === "willingness" ? "var(--gold)" : "var(--teal)"}` });
     return h("div", { class: "fac", title: `${f.value >= 0 ? "Helps" : "Works against"} your application` },
       h("span", {}, f.factor), h("div", { class: "track" }, bar));
   });
@@ -224,20 +224,20 @@ async function step4(v) {
     h("h2", {}, "Your indicative result"),
     h("div", { class: "banner " + r.tier }, h("b", {}, r.headline), h("p", {}, r.message)),
     h("div", { class: "sum" },
-      h("div", { class: "metric" }, h("small", {}, "You borrow"), h("b", {}, naira(r.loan.amount))),
-      h("div", { class: "metric" }, h("small", {}, `You repay (${Math.round(r.loan.interest * 100)}% interest)`), h("b", {}, naira(r.loan.repay))),
+      h("div", { class: "metric" }, h("small", {}, "You borrow"), h("b", {}, ksh(r.loan.amount))),
+      h("div", { class: "metric" }, h("small", {}, `You repay (${Math.round(r.loan.interest * 100)}% interest)`), h("b", {}, ksh(r.loan.repay))),
       h("div", { class: "metric" }, h("small", {}, "Within"), h("b", {}, `${r.loan.term} days`))),
     ...(r.notes.length ? [h("ul", { class: "notes" }, r.notes.map(n => h("li", {}, n)))] : []),
     h("h3", {}, "Why this result"),
     ...factorRows(r.factors),
     h("div", { class: "axis" }, h("span", {}, "\u2190 works against you"), h("span", {}, "helps you \u2192")),
     h("div", { class: "legend" },
-      h("span", {}, h("i", { class: "dot", style: "background:var(--orange)" }), "Willingness to pay (how you've repaid before)"),
+      h("span", {}, h("i", { class: "dot", style: "background:var(--gold)" }), "Willingness to pay (how you've repaid before)"),
       h("span", {}, h("i", { class: "dot", style: "background:var(--teal)" }), "Ability to pay / profile (the loan and your circumstances)")),
     h("p", { class: "fine", style: "text-align:left" }, "Bars show how strongly each answer moved the Logistic Regression model. They describe model behaviour, not cause."),
     h("h3", {}, "What if I change my request?"),
-    h("div", { class: "wi" }, whatIf(`Different amount, ${r.loan.term} days`, r.what_if.amounts, naira),
-      whatIf(`Different period, ${naira(r.loan.amount)}`, r.what_if.terms, t => `${t} days`)),
+    h("div", { class: "wi" }, whatIf(`Different amount, ${r.loan.term} days`, r.what_if.amounts, ksh),
+      whatIf(`Different period, ${ksh(r.loan.amount)}`, r.what_if.terms, t => `${t} days`)),
     h("details", {}, h("summary", {}, "Technical details"),
       h("p", {}, "Scores are P(Good) from each model. A request is flagged when the score is below that model's tuned cut-off. Scores are rankings, not calibrated probabilities of repayment."),
       h("table", {}, h("tr", {}, ["Model", "P(Good)", "Cut-off", "Predicts Good"].map(t => h("th", {}, t))),

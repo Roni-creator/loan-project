@@ -38,7 +38,7 @@ export default function Apply() {
           {metaError && <p className="msg err">The portal couldn't start: {metaError}</p>}
           {!meta && !metaError && <div className="spin">Loading…</div>}
           {meta && step === 1 && (
-            <StepHistory meta={meta} app={app} update={update} setHistoryValue={setHistoryValue} onNext={() => go(2)} />
+            <StepHistory app={app} update={update} setHistoryValue={setHistoryValue} onNext={() => go(2)} />
           )}
           {meta && step === 2 && (
             <StepAbout meta={meta} app={app} setProfileValue={setProfileValue} onBack={() => go(1)} onNext={() => go(3)} />
@@ -50,7 +50,7 @@ export default function Apply() {
             <StepResult
               app={app} setRef={(ref) => update({ ref })}
               onBack={() => go(3)} onReview={() => go(1)}
-              onRestart={() => { update({ mode: null, found: false, cid: "", ref: null }); go(1); }}
+              onRestart={() => { update({ mode: null, ref: null }); go(1); }}
             />
           )}
         </section>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet } from "../../api.js";
 import { StatusBadge, TierBadge } from "../../components/Badge.jsx";
-import { naira } from "../../lib/applyState.js";
+import { ksh } from "../../lib/applyState.js";
 
 export default function MyApplications() {
   const [state, setState] = useState({ status: "loading", items: [], error: "" });
@@ -47,7 +47,7 @@ export default function MyApplications() {
                 <tr key={a.application_id}>
                   <td className="mono">{a.reference}</td>
                   <td>{new Date(a.created_at).toLocaleDateString()}</td>
-                  <td>{a.amount ? naira(a.amount) : "—"}</td>
+                  <td>{a.amount ? ksh(a.amount) : "—"}</td>
                   <td>{a.term ? `${a.term} days` : "—"}</td>
                   <td><TierBadge tier={a.tier} /></td>
                   <td><StatusBadge status={a.status} /></td>

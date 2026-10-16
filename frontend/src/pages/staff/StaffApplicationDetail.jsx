@@ -5,7 +5,7 @@ import Assessment from "../../components/Assessment.jsx";
 import { StatusBadge } from "../../components/Badge.jsx";
 import { useAuth } from "../../lib/auth.jsx";
 import { useToast } from "../../lib/toast.jsx";
-import { naira } from "../../lib/applyState.js";
+import { ksh } from "../../lib/applyState.js";
 
 function AnswerList({ answers }) {
   const h = answers.history;
@@ -15,7 +15,7 @@ function AnswerList({ answers }) {
     ["Employment", answers.employment],
     ["Bank", answers.bank],
     ["Account type", answers.account],
-    ["Amount", answers.amount ? naira(answers.amount) : "—"],
+    ["Amount", answers.amount ? ksh(answers.amount) : "—"],
     ["Term", answers.term ? `${answers.term} days` : "—"],
   ];
   if (h) {
@@ -23,7 +23,7 @@ function AnswerList({ answers }) {
       ["Repaid on time", h.on_time], ["1–3 days late", h.slight],
       ["4–30 days late", h.late], ["Over 30 days late", h.very_late],
       ["Typical days vs. due", h.avg_late], ["Longest delay", h.max_late],
-      ["Typical past loan", naira(h.avg_amount)], ["Typical past term", `${h.avg_term} days`]);
+      ["Typical past loan", ksh(h.avg_amount)], ["Typical past term", `${h.avg_term} days`]);
   }
   return (
     <div className="table-scroll">

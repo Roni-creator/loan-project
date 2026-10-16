@@ -2,8 +2,12 @@
 auth.py - authentication and authorization helpers for the Flask API.
 
 Design
-  * Passwords: bcrypt (same library/hashes already used by db.py, so existing
-    accounts keep working).
+  * Passwords: werkzeug.security.generate_password_hash / check_password_hash.
+    Login verifies the entered password against the stored hash (it is never
+    re-hashed). Hashes written by an earlier release (bcrypt) keep working and
+    are transparently upgraded to the werkzeug format on the next sign-in.
+  * Sign-in: email address + password. Emails are normalised (trim + lower case)
+    before lookup so casing/spacing never creates a second account.
   * Sessions: opaque random token in an HttpOnly cookie. Only its SHA-256 hash
     is stored server-side (auth_sessions), so a database leak cannot be replayed
     as a live session. Logout deletes the row -> the cookie is dead immediately.
@@ -44,7 +48,7 @@ def load_current_user() -> None:
     token = request.cookies.get(COOKIE_NAME)
     session = db.get_session(token) if token else None
     g.session = session
-    g.user = ({k: session[k] for k in ("user_id", "username", "role", "full_name")}
+    g.user = ({k: session[k] for k in ("user_id", "username", "email", "role", "full_name")}
               if session else None)
 
 
@@ -67,7 +71,8 @@ def csrf_ok() -> bool:
 
 def public_user(user: dict) -> dict:
     """Serialize an account for the client (never includes the password hash)."""
-    return {"user_id": user["user_id"], "username": user["username"], "role": user["role"],
+    return {"user_id": user["user_id"], "username": user["username"],
+            "email": user.get("email"), "role": user["role"],
             "full_name": user.get("full_name")}
 
 

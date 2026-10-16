@@ -44,7 +44,7 @@ DEMO_PATH = PROJECT_DIR / "traindemographics.csv"
 PREV_PATH = PROJECT_DIR / "trainprevloans.csv"
 LOG_PATH = PROJECT_DIR / "applications_log.csv"
 
-NAVY, TEAL, ORANGE = "#1B2A49", "#1A8E8E", "#E8833A"
+NAVY, TEAL, GOLD = "#14243A", "#2C7A68", "#DDA85A"
 
 # Same label-encoding the pipeline used (sklearn LabelEncoder = alphabetical)
 ACCOUNT_TYPES = {"Current": 0, "Other": 1, "Savings": 2}
@@ -271,7 +271,7 @@ def history_inputs(mode: str, rec: dict | None, key: str):
                                help="Negative = you usually pay early. Positive = late.")
     max_late = c6.number_input("Longest delay (days)", -30.0, 400.0,
                                float(h.get("max_late", 0.0)), 1.0, key=f"ml_{key}")
-    avg_amt = c7.number_input("Typical past loan (₦)", 5000.0, 100000.0,
+    avg_amt = c7.number_input("Typical past loan (KSh)", 5000.0, 100000.0,
                               float(round(h.get("avg_amount", 15000.0), -2)), 1000.0, key=f"aa_{key}")
     avg_term = c8.number_input("Typical past period (days)", 7.0, 120.0,
                                float(round(h.get("avg_term", 30.0))), 1.0, key=f"at_{key}")
@@ -344,7 +344,7 @@ def main():
 
         st.subheader("3 · The loan you want")
         l1, l2 = st.columns(2)
-        amount = l1.select_slider("Amount (₦)", options=[int(a) for a in amounts], value=10000,
+        amount = l1.select_slider("Amount (KSh)", options=[int(a) for a in amounts], value=10000,
                                   format_func=lambda v: f"{v:,}")
         term = l2.select_slider("Repayment period (days)", options=terms, value=30)
         submitted = st.form_submit_button("Check my application", type="primary", use_container_width=True)
@@ -370,8 +370,8 @@ def main():
     getattr(st, kind)(f"**{headline}.** {message}")
     interest = interest_by_term.get(int(p["term"]), 0.0)
     m1, m2, m3 = st.columns(3)
-    m1.metric("You borrow", f"₦{p['amount']:,.0f}")
-    m2.metric("You repay", f"₦{p['amount'] * (1 + interest):,.0f}", f"{interest:.0%} interest", delta_color="off")
+    m1.metric("You borrow", f"KSh {p['amount']:,.0f}")
+    m2.metric("You repay", f"KSh {p['amount'] * (1 + interest):,.0f}", f"{interest:.0%} interest", delta_color="off")
     m3.metric("Within", f"{p['term']} days")
 
     notes = []
@@ -395,7 +395,7 @@ def main():
             y=alt.Y("factor:N", sort=alt.EncodingSortField("contribution", order="descending"), title=None),
             color=alt.Color("driver:N", title="Type of signal",
                             scale=alt.Scale(domain=["Willingness to pay", "Ability to pay / profile"],
-                                            range=[ORANGE, TEAL])),
+                                            range=[GOLD, TEAL])),
             tooltip=["factor", "effect", alt.Tooltip("contribution:Q", format=".2f"), "driver"],
         ).properties(height=260)
     )
@@ -411,7 +411,7 @@ def main():
     for a in amounts:
         if (int(p["term"]), float(a)) in seen_pairs:
             s = score(models, thresholds, build_features({**p, "amount": a}, columns, medians, interest_by_term))
-            alt_rows.append({"Amount (₦)": f"{int(a):,}", "Result": outcome_icon(s) + ("  ← you" if a == p["amount"] else "")})
+            alt_rows.append({"Amount (KSh)": f"{int(a):,}", "Result": outcome_icon(s) + ("  ← you" if a == p["amount"] else "")})
     w1.caption(f"Different amount, {p['term']} days")
     w1.dataframe(pd.DataFrame(alt_rows), hide_index=True, use_container_width=True)
     term_rows = []
@@ -419,7 +419,7 @@ def main():
         if (int(t), float(p["amount"])) in seen_pairs:
             s = score(models, thresholds, build_features({**p, "term": t}, columns, medians, interest_by_term))
             term_rows.append({"Period (days)": t, "Result": outcome_icon(s) + ("  ← you" if t == p["term"] else "")})
-    w2.caption(f"Different period, ₦{p['amount']:,.0f}")
+    w2.caption(f"Different period, KSh {p['amount']:,.0f}")
     w2.dataframe(pd.DataFrame(term_rows), hide_index=True, use_container_width=True)
 
     with st.expander("Technical details"):

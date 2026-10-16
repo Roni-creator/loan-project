@@ -13,11 +13,12 @@ export function NumField({ label, hint, min, max, step = 1, value, onValue }) {
   );
 }
 
-export function SelectField({ label, value, options, onValue }) {
+export function SelectField({ label, value, options, onValue, placeholder = "Select…" }) {
   return (
     <label className="f">
       {label}
       <select value={value} onChange={(e) => onValue(e.target.value)}>
+        {(value === "" || !options.includes(value)) && <option value="">{placeholder}</option>}
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
     </label>

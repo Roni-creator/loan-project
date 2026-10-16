@@ -8,7 +8,7 @@ function linksFor(user) {
   if (!user) {
     return [
       { to: "/", label: "Home", end: true },
-      { to: "/apply", label: "Apply" },
+      { to: "/register", label: "Apply" },
     ];
   }
   if (user.role === "applicant") {
@@ -19,11 +19,13 @@ function linksFor(user) {
     ];
   }
   if (STAFF_ROLES.includes(user.role)) {
-    return [
-      { to: "/staff", label: "Dashboard", end: true },
-      { to: "/staff/applications", label: "Applications" },
-      ...(user.role === "credit_analyst" ? [{ to: "/staff/models", label: "Model insights" }] : []),
-    ];
+    // Business managers get a management overview only; personal applicant
+    // records are for credit analysts and loan officers.
+    const links = [{ to: "/staff", label: "Dashboard", end: true }];
+    if (user.role === "business_manager") return links;
+    links.push({ to: "/staff/applications", label: "Applications" });
+    if (user.role === "credit_analyst") links.push({ to: "/staff/models", label: "Model insights" });
+    return links;
   }
   return [{ to: "/", label: "Home", end: true }];
 }

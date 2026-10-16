@@ -5,7 +5,7 @@ function FactorRows({ factors }) {
   return factors.map((f) => {
     const width = (Math.abs(f.value) / max) * 50;
     const side = f.value >= 0 ? { left: "50%" } : { right: "50%" };
-    const color = f.driver === "willingness" ? "var(--orange)" : "var(--teal)";
+    const color = f.driver === "willingness" ? "var(--gold)" : "var(--teal)";
     return (
       <div className="fac" key={f.feature}
         title={`${f.value >= 0 ? "Helps" : "Works against"} the application`}>
@@ -56,7 +56,7 @@ export default function Assessment({ recommendation, scores, factors }) {
         {factors.map((f) => {
           const width = (Math.abs(f.value) / max) * 50;
           const side = f.value >= 0 ? { left: "50%" } : { right: "50%" };
-          const color = f.driver === "willingness" ? "var(--orange)" : "var(--teal)";
+          const color = f.driver === "willingness" ? "var(--gold)" : "var(--teal)";
           return (
             <div className="fac" key={f.feature}>
               <span>{f.factor}</span>

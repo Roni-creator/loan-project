@@ -30,6 +30,8 @@ Thumbs.db
 # Saved machine learning models
 *.joblib
 
+# SQLite database and any backups of it (they contain password hashes)
 creditscore.db
+creditscore*.db
 db_*.csv
 old/

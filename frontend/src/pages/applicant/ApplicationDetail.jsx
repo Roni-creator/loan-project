@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { apiGet } from "../../api.js";
 import Assessment from "../../components/Assessment.jsx";
 import { StatusBadge } from "../../components/Badge.jsx";
-import { naira } from "../../lib/applyState.js";
+import { ksh } from "../../lib/applyState.js";
 
 export default function ApplicantApplicationDetail() {
   const { id } = useParams();
@@ -40,7 +40,7 @@ export default function ApplicantApplicationDetail() {
       </div>
 
       <div className="sum">
-        <div className="metric"><small>Amount</small><b>{a.amount ? naira(a.amount) : "—"}</b></div>
+        <div className="metric"><small>Amount</small><b>{a.amount ? ksh(a.amount) : "—"}</b></div>
         <div className="metric"><small>Term</small><b>{a.term ? `${a.term} days` : "—"}</b></div>
         <div className="metric"><small>Employment</small><b>{a.answers?.employment || "—"}</b></div>
       </div>

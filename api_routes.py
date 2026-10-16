@@ -7,8 +7,8 @@ scoring or invents predictions - staff see exactly what the models output.
 
 Endpoints
   Public
-    POST /api/auth/register   applicant self-registration (role forced to 'applicant')
-    POST /api/auth/login      credential check + session cookie
+    POST /api/auth/register   applicant self-registration with email (role forced to 'applicant')
+    POST /api/auth/login      email + password check + session cookie
     GET  /api/auth/me         current account + CSRF token
     POST /api/auth/logout     destroy the server-side session
   Applicant (role = applicant)
@@ -16,9 +16,11 @@ Endpoints
     GET  /api/applications            own submission history
     GET  /api/applications/<id>       own application detail + explanation
   Staff (business_manager / credit_analyst / loan_officer)
-    GET  /api/staff/summary                     counts + thresholds (all staff)
-    GET  /api/staff/applications                application list (all staff)
-    GET  /api/staff/applications/<id>           full assessment + explanation
+    GET  /api/staff/summary                     portfolio counts + thresholds (all staff;
+                                                business managers get aggregates, no personal data)
+    GET  /api/staff/applications                application list (credit_analyst / loan_officer;
+                                                a loan officer sees the unassigned queue + own cases)
+    GET  /api/staff/applications/<id>           full assessment + explanation (same roles)
     POST /api/staff/applications/<id>/assign    loan_officer claims a case
     POST /api/staff/applications/<id>/decision  loan_officer decision + note
     GET  /api/staff/models                      model metrics/drivers (credit_analyst)
@@ -81,14 +83,15 @@ def _application_summary(row) -> dict:
     }
 
 
-def _staff_application_row(row) -> dict:
+def _staff_application_row(row, include_personal: bool = True) -> dict:
     data = _application_summary(row)
     keys = row.keys()
     if "applicant_username" in keys:
-        data["applicant_username"] = row["applicant_username"]
-        data["applicant_name"] = row["applicant_name"]
         data["assigned_officer_id"] = row["assigned_officer_id"]
         data["officer_username"] = row["officer_username"]
+        if include_personal:
+            data["applicant_username"] = row["applicant_username"]
+            data["applicant_name"] = row["applicant_name"]
     return data
 
 
@@ -105,22 +108,43 @@ def _assessment(p: dict) -> dict:
 
 
 # --------------------------------------------------------------- auth --------
+def _email_taken(email: str) -> bool:
+    with db.connect() as con:
+        return con.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone() is not None
+
+
+def _username_taken(username: str) -> bool:
+    with db.connect() as con:
+        return con.execute("SELECT 1 FROM users WHERE username = ?", (username,)).fetchone() is not None
+
+
 @bp.post("/api/auth/register")
 def register():
     data = _json_body()
     username = str(data.get("username", "")).strip()
+    email = db.normalize_email(data.get("email"))
     password = str(data.get("password", ""))
     full_name = str(data.get("full_name", "")).strip() or None
     if not USERNAME_RE.match(username):
         return _bad("Username must be 3-32 characters (letters, numbers, . _ -).")
+    if not db.valid_email(email):
+        return _bad("Enter a valid email address.")
     if len(password) < 8 or not re.search(r"[A-Za-z]", password) or not re.search(r"\d", password):
         return _bad("Password must be at least 8 characters and include a letter and a number.")
-    try:
-        user_id = db.create_user(username, password, db.APPLICANT_ROLE, full_name)
-    except sqlite3.IntegrityError:
+    if _email_taken(email):
+        return _bad("That email address is already registered.", 409)
+    if _username_taken(username):
         return _bad("That username is already taken.", 409)
+    try:
+        # The public registration path always creates an applicant; the role is
+        # never taken from the request body.
+        user_id = db.create_user(username, password, db.APPLICANT_ROLE, full_name, email=email)
+    except sqlite3.IntegrityError:
+        # Lost the race between the check above and the insert.
+        return _bad("That email address or username is already registered.", 409)
     session = db.create_session(user_id)
-    user = {"user_id": user_id, "username": username, "role": db.APPLICANT_ROLE, "full_name": full_name}
+    user = {"user_id": user_id, "username": username, "email": email,
+            "role": db.APPLICANT_ROLE, "full_name": full_name}
     auth.audit("register", "applicant self-registration", user_id=user_id, actor=username)
     resp = jsonify(user=auth.public_user(user), csrf_token=session["csrf_token"],
                    expires_at=session["expires_at"])
@@ -130,13 +154,14 @@ def register():
 @bp.post("/api/auth/login")
 def login():
     data = _json_body()
-    username = str(data.get("username", "")).strip()
+    email = db.normalize_email(data.get("email"))
     password = str(data.get("password", ""))
-    user = db.verify_user(username, password) if username and password else None
+    user = db.verify_user(email, password) if email and password else None
     if user is None:
-        db.log_audit("login_failed", "invalid credentials", actor=username or None,
+        # Generic message: it must not reveal whether the email has an account.
+        db.log_audit("login_failed", "invalid credentials", actor=email or None,
                      ip=request.remote_addr)
-        return _bad("Invalid username or password.", 401)
+        return _bad("Invalid email or password.", 401)
     session = db.create_session(user["user_id"])
     auth.audit("login", f"role={user['role']}", user_id=user["user_id"], actor=user["username"])
     resp = jsonify(user=auth.public_user(user), csrf_token=session["csrf_token"],
@@ -159,7 +184,6 @@ def me():
     return jsonify(user=auth.public_user(auth.current_user()), csrf_token=auth.current_csrf())
 
 
-# ------------------------------------------------------------ applicant ------
 # ------------------------------------------------------------ applicant ------
 def submit_application(payload: dict):
     """Validate, score (real models) and persist a submission for the current user.
@@ -227,7 +251,14 @@ def my_application(application_id: int):
 @bp.get("/api/staff/summary")
 @auth.require_roles(*db.STAFF_ROLES)
 def staff_summary():
-    rows = db.list_staff_applications()
+    user = auth.current_user()
+    # A loan officer's figures cover only what they may act on (unassigned + own);
+    # managers and analysts get the whole portfolio.
+    scope_officer = user["user_id"] if user["role"] == "loan_officer" else None
+    rows = db.list_staff_applications(scope_officer)
+    # Business managers see aggregate management information only, never personal
+    # applicant details; analysts and officers may see them.
+    include_personal = user["role"] != "business_manager"
     by_status = {s: 0 for s in STATUSES}
     by_tier = {"likely": 0, "review": 0, "refer": 0}
     for r in rows:
@@ -240,37 +271,40 @@ def staff_summary():
             "SELECT model_name, setting, threshold, accuracy, precision_bad, recall_bad,"
             " f1_bad, roc_auc, pr_auc_bad FROM model_runs ORDER BY model_name, setting").fetchall()
     frequencies = {u["role"]: u["n"] for u in users}
-    your_role = auth.current_user()["role"]
-    mine = None
-    if your_role == db.APPLICANT_ROLE:
-        mine = None
-    elif your_role == "loan_officer":
-        mine = sum(1 for r in rows if r["assigned_officer_id"] == auth.current_user()["user_id"])
+    mine = (sum(1 for r in rows if r["assigned_officer_id"] == user["user_id"])
+            if user["role"] == "loan_officer" else None)
     return jsonify(
         total_applications=len(rows),
         by_status=by_status,
         by_tier=by_tier,
         accounts=frequencies,
         assigned_to_me=mine,
-        recent=[_staff_application_row(r) for r in rows[:10]],
+        recent=[_staff_application_row(r, include_personal) for r in rows[:10]],
         model_runs=[dict(r) for r in runs],
         thresholds=core.reference()["thresholds"],
     )
 
 
 @bp.get("/api/staff/applications")
-@auth.require_roles(*db.STAFF_ROLES)
+@auth.require_roles("credit_analyst", "loan_officer")
 def staff_applications():
-    rows = db.list_staff_applications()
+    user = auth.current_user()
+    scope_officer = user["user_id"] if user["role"] == "loan_officer" else None
+    rows = db.list_staff_applications(scope_officer)
     return jsonify(applications=[_staff_application_row(r) for r in rows])
 
 
 @bp.get("/api/staff/applications/<int:application_id>")
-@auth.require_roles(*db.STAFF_ROLES)
+@auth.require_roles("credit_analyst", "loan_officer")
 def staff_application(application_id: int):
+    user = auth.current_user()
     row = db.get_application(application_id)
     if row is None:
         return _bad("Application not found.", 404)
+    # A loan officer may only open the unassigned queue and their own caseload.
+    if user["role"] == "loan_officer" and row["assigned_officer_id"] not in (None, user["user_id"]):
+        auth.audit("unauthorized", f"GET application {application_id} (assigned to another officer)")
+        return _bad("That application is assigned to another officer.", 403)
     with db.connect() as con:
         full = con.execute("""
             SELECT a.*, u.username AS applicant_username, u.full_name AS applicant_name,

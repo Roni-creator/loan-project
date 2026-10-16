@@ -1,4 +1,4 @@
-import { naira } from "../../lib/applyState.js";
+import { ksh } from "../../lib/applyState.js";
 
 function Chips({ values, selected, label, onPick }) {
   return (
@@ -20,15 +20,15 @@ export default function StepLoan({ meta, app, update, onBack, onNext }) {
     <>
       <h2>The loan you want</h2>
       <h3>Amount</h3>
-      <Chips values={meta.amounts} selected={app.amount} label={naira} onPick={(v) => update({ amount: v })} />
+      <Chips values={meta.amounts} selected={app.amount} label={ksh} onPick={(v) => update({ amount: v })} />
       <h3>Repayment period</h3>
       <Chips values={meta.terms} selected={app.term} label={(t) => `${t} days`} onPick={(v) => update({ term: v })} />
 
       <div className="sum">
-        <div className="metric"><small>You borrow</small><b>{naira(app.amount)}</b></div>
+        <div className="metric"><small>You borrow</small><b>{ksh(app.amount)}</b></div>
         <div className="metric">
           <small>{`You repay (${Math.round(interest * 100)}% interest)`}</small>
-          <b>{naira(app.amount * (1 + interest))}</b>
+          <b>{ksh(app.amount * (1 + interest))}</b>
         </div>
         <div className="metric"><small>Within</small><b>{`${app.term} days`}</b></div>
       </div>

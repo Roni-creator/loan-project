@@ -49,8 +49,8 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("auth:unauthorized", handler);
   }, [clear]);
 
-  const login = useCallback(async (username, password) => {
-    const data = await apiPost("/api/auth/login", { username, password });
+  const login = useCallback(async (email, password) => {
+    const data = await apiPost("/api/auth/login", { email, password });
     setUser(data.user);
     setCsrfToken(data.csrf_token);
     return data.user;

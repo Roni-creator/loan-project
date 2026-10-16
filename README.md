@@ -5,7 +5,7 @@ alternative financial behaviour data, with:
 
 - a **React + Flask applicant/staff portal** with real server-side authentication,
   role-based authorization and a database-backed application workflow, and
-- the original **login-protected Streamlit app** (unchanged) plus a SQLite database and
+- the original **login-protected Streamlit app**  plus a SQLite database and
   CSV exports for the Power BI dashboards.
 
 Both front-ends are powered by the same scoring code (`portal_core.py`), so a prediction
@@ -17,8 +17,8 @@ is computed in exactly one place.
 |---|---|---|
 | ML pipeline | `feature_engineering_pipeline.py`, `extra_features_experiment.py`, `threshold_tuning.py` | merges data, trains Logistic Regression + Random Forest, tunes thresholds |
 | Scoring core | `portal_core.py` | validation, the 36-column feature row, both pipelines, LR explanations — one source of truth |
-| SQLite layer | `db.py` | users, sessions, applications, assignments, decisions, audit log, exports |
-| Auth helpers | `auth.py` | bcrypt passwords, session cookies, CSRF, `@require_auth` / `@require_roles` |
+| SQLite layer | `db.py` | users (username + email), sessions, applications, assignments, decisions, audit log, exports |
+| Auth helpers | `auth.py` | email sign-in, werkzeug password hashes (bcrypt legacy fallback), session cookies, CSRF, `@require_auth` / `@require_roles` |
 | JSON API | `api_routes.py` | authentication, applicant and staff endpoints |
 | Flask app | `webapp.py` | JSON API + serves the built React SPA (and the legacy static page) |
 | React frontend | `frontend/` | landing, applicant portal, staff dashboards |
@@ -61,6 +61,22 @@ Put these three files in the project folder (next to `build_all.py`):
 - `trainperf.csv`
 - `trainprevloans.csv`
 
+#### Currency and data provenance (important)
+
+The **training data is Nigerian** — loan amounts in the source dataset run roughly
+10,000–60,000, consistent with naira micro-loans. The models were trained on those values and
+have **not** been recalibrated or converted.
+
+The **user-facing portal is Kenyan**: money is displayed and labelled in **Kenyan Shillings
+(KES / `KSh`)**. Switching the label did not change any number, model feature, threshold or
+prediction — the same amounts (10,000–60,000) and terms (15/30/60/90 days) are used everywhere.
+In other words: the *amounts* are numerically identical, only the currency *label* changed from
+`₦` to `KSh`.
+
+This is a deliberate, documented relabelling, not a currency conversion. If the models are ever
+retrained on Kenyan data, the amounts and thresholds should be re-derived there; the KES label
+here does not imply that has happened.
+
 ### Build everything
 
 ```powershell
@@ -100,31 +116,41 @@ npm run dev                            # http://127.0.0.1:5173
 
 Change the proxy target with `frontend/.env` (`VITE_API_TARGET`, see `frontend/.env.example`).
 
-### Run the Streamlit app (unchanged)
+### Run the Streamlit app (still supported)
 
 ```powershell
 .venv\Scripts\python -m streamlit run app.py
 ```
 
+It shares the same database, so it now also signs in with **email + password** (the same
+accounts as the web portal).
+
 ## Accounts, roles and what each role can do
 
-Accounts live in `creditscore.db` (see `db.py`). `python build_all.py` (or `python db.py`)
-creates three **demo** staff accounts; change them before showing anyone.
+Accounts live in `creditscore.db` (see `db.py`). **Sign-in is by email address + password**
+(the username is still stored and shown in the UI, but it is no longer used to log in).
+`python build_all.py` (or `python db.py`) creates three **demo** staff accounts; change them
+before showing anyone. Their emails use the reserved `.example` TLD so they can never receive
+real mail.
 
-| Username | Password | Role | Can do |
+| Email | Password | Role | Can do |
 |---|---|---|---|
-| `manager` | `ChangeMe!1` | business_manager | Portfolio summaries over all applications |
-| `analyst` | `ChangeMe!2` | credit_analyst | Everything `manager` can, plus model insights (metrics, thresholds, drivers) |
-| `officer` | `ChangeMe!3` | loan_officer | Everything `manager` can, plus claim applications and record decisions |
+| `manager@loancredit.example` | `ChangeMe!1` | business_manager | Aggregate portfolio summaries (counts, mix, model metrics) — **no personal applicant records** |
+| `analyst@loancredit.example` | `ChangeMe!2` | credit_analyst | Read applications and assessments (read-only), plus model insights (metrics, thresholds, drivers) |
+| `officer@loancredit.example` | `ChangeMe!3` | loan_officer | See the unassigned queue and **their own** cases; claim and record decisions |
 | _self-registered_ | — | applicant | Submit applications and view **only their own** history/status/results |
 
 Role checks are enforced by Flask on every request from the server-side session; the
-frontend only hides UI, it is never the source of truth for authorization.
+frontend only hides UI, it is never the source of truth for authorization. A business
+manager never receives another applicant's personal details, and a loan officer cannot open
+a case assigned to a different officer.
 
 ### Applicant flow
 
-1. Register at `/register` (username 3–32 chars; password ≥8 chars with a letter and a number).
-2. Complete the multi-step application (`/apply`) and submit.
+1. Register at `/register` (username 3–32 chars; **email** address; password ≥8 chars with a
+   letter and a number). You sign in later with the email + password.
+2. Complete the multi-step application (`/apply`) and submit. The applicant enters their **own**
+   personal fields and borrowing history; there is no shared "sample customer" shortcut.
 3. The backend validates, scores with the real models, stores the application, and returns a
    reference (`APP-XXXXXXXX`). See your list at `/my-applications` and open one for the
    model assessment, contributing factors and any decision notes.
@@ -140,8 +166,16 @@ frontend only hides UI, it is never the source of truth for authorization.
 
 ## Authentication and security
 
-- **Passwords** are stored as bcrypt hashes (the same hashes the Streamlit app already used,
-  so existing logins keep working). Login verifies server-side; failures are audited.
+- **Sign-in identifier** is the email address. Emails are normalised (trimmed + lower-cased)
+  before lookup and before storage, so `A@B.com ` and `a@b.com` are the same account. A
+  database-level unique index on `lower(email)` guarantees one account per address (legacy rows
+  with no email yet are allowed to coexist as `NULL`).
+- **Passwords** are stored as werkzeug hashes (`scrypt` by default). Hashes written by an earlier
+  release (`bcrypt`) still verify and are transparently re-hashed to the werkzeug format on the
+  next successful sign-in, so no account needs a password reset. Login verifies server-side; the
+  same generic message (`Invalid email or password.`) is returned whether the email is unknown or
+  the password is wrong, so the API does not reveal which addresses have accounts. Failures are
+  audited.
 - **Sessions** are opaque random tokens in an `HttpOnly` cookie (`SameSite=Lax`, optional
   `Secure`). Only a SHA-256 hash of the token is stored in `auth_sessions`, so a database
   leak cannot be replayed as a live session. Logout deletes the row, invalidating the cookie.
@@ -178,14 +212,36 @@ database/CSV/joblib artifacts.
 ### Account management
 
 ```powershell
-python db.py set-password manager          # prompts for a new password
-python db.py add-user jane credit_analyst  # prompts for a password
+python db.py set-password manager                    # prompts for a new password
+python db.py set-email manager manager@example.org   # set/replace the sign-in email
+python db.py add-user jane credit_analyst --email jane@example.org   # prompts for a password
 python db.py list-users
 ```
 
+`add-user` accepts an optional `--email`. An account with no email cannot sign in; give it one
+with `set-email`.
+
+### Migrating an existing database to email sign-in
+
+`init_db()` (run by `webapp.py`, `build_all.py`, `db.py` and the tests) **adds the `email`
+column and its unique index in place** the first time it runs against an older database:
+
+- Existing rows keep their `user_id`, `password_hash`, `role`, `full_name` and all their
+  applications/decisions — nothing is recreated and no hash is changed.
+- Existing accounts are left with **no email** (we never invent addresses), so they cannot sign
+  in until an operator sets one: `python db.py set-email <username> <email>`.
+- The three demo staff accounts get their documented `.example` emails automatically (only if
+  they have none; an operator-set email is never overwritten).
+
+Migrations are additive and idempotent. **Back up the database file before upgrading** anyway:
+
+```powershell
+copy creditscore.db creditscore.backup.db
+```
+
 `python db.py` is idempotent: rerunning it never duplicates users or model-run rows, and it
-applies schema migrations (including adding the `applicant` role to older databases) without
-losing data.
+applies schema migrations (including adding the `applicant` role and the `email` column to older
+databases) without losing data.
 
 ## API reference
 
@@ -195,16 +251,20 @@ Public:
 |---|---|---|
 | GET | `/api/meta` | reference values for the application form |
 | POST | `/api/score` | read-only model preview; stores nothing |
-| POST | `/api/auth/register` | applicant self-registration (role forced to `applicant`) |
-| POST | `/api/auth/login` | credential check + session cookie |
+| POST | `/api/auth/register` | applicant self-registration (username + email + password; role forced to `applicant`) |
+| POST | `/api/auth/login` | email + password check + session cookie |
 
-Authenticated (any role): `GET /api/auth/me`, `POST /api/auth/logout`,
-`GET /api/sample-id`, `POST /api/lookup`.
+Authenticated (any role): `GET /api/auth/me`, `POST /api/auth/logout`.
+
+Staff only (credit analyst / loan officer): `GET /api/sample-id`, `POST /api/lookup`
+(these read the training dataset for review, never the signed-in user's own record).
 
 Applicant only: `POST /api/applications`, `GET /api/applications`,
 `GET /api/applications/<id>` (plus the legacy `POST /api/submit` alias).
 
-Staff (`/api/staff/*`): `summary`, `applications`, `applications/<id>` for all staff;
+Staff (`/api/staff/*`): `summary` for all staff (business managers get aggregates without
+personal details); `applications` and `applications/<id>` for credit analysts and loan
+officers (a loan officer sees the unassigned queue plus their own cases);
 `applications/<id>/assign` and `applications/<id>/decision` for loan officers only;
 `models` for credit analysts only.
 
@@ -212,7 +272,8 @@ Staff (`/api/staff/*`): `summary`, `applications`, `applications/<id>` for all s
 
 `db.py` creates/migrates these tables in `creditscore.db`:
 
-- `users` — username, bcrypt `password_hash`, `role`, `full_name` (`applicant` allowed).
+- `users` — `username`, `email` (unique, lower-cased; nullable for legacy rows), `password_hash`
+  (werkzeug; legacy bcrypt accepted), `role`, `full_name` (`applicant` allowed).
 - `auth_sessions` — session `token_hash`, `csrf_token`, `user_id` FK, expiry.
 - `applicants` / `predictions` / `model_runs` — the original scored-application and model
   tables, kept for the Power BI exports.
@@ -263,8 +324,12 @@ with the Text/CSV connector.
 `test_api_auth.py` covers backend authentication and authorization end to end: valid/invalid
 login, logout invalidates the session, unauthenticated requests are blocked, role restrictions,
 applicant data isolation, database persistence, CSRF enforcement, and that scoring returns real
-model output. Tests that need generated artifacts skip themselves until you have run
-`build_all.py`.
+model output. It also covers the email changes: email registration and login, case/whitespace
+normalisation, duplicate-email rejection, the generic login error, and server-side email
+validation. `test_app_setup.py` adds database-level tests for the in-place email migration
+(preserving ids, hashes and roles of pre-existing accounts), the email uniqueness rule and the
+`add-user --email` / `set-email` CLI. Tests that need generated artifacts skip themselves until
+you have run `build_all.py`.
 
 ## Method notes
 

@@ -2,7 +2,8 @@
 SQLite layer for the BI-ML credit project (creditscore.db).
 
 Tables
-  users                 - login accounts; role maps to the dashboard each actor uses
+  users                 - login accounts (username + email); role maps to the dashboard
+                          each actor uses. Sign-in is by email + password.
   applicants            - one row per scored loan application (features stored as JSON)
   predictions           - model output per applicant (P(Bad), decision, threshold used)
   model_runs            - metrics + threshold for each training run (audit trail)
@@ -19,13 +20,19 @@ Run once:  python db.py     (creates DB, seeds demo users, loads model_runs + te
 import hashlib
 import json
 import os
+import re
 import secrets
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import bcrypt
 import pandas as pd
+from werkzeug.security import check_password_hash, generate_password_hash
+
+try:  # only needed to verify hashes written by earlier releases of this project
+    import bcrypt
+except ImportError:  # pragma: no cover - bcrypt is no longer required
+    bcrypt = None
 
 DB_PATH = Path(__file__).resolve().parent / "creditscore.db"
 STAFF_ROLES = ("business_manager", "credit_analyst", "loan_officer")
@@ -37,6 +44,7 @@ SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     user_id       INTEGER PRIMARY KEY AUTOINCREMENT,
     username      TEXT NOT NULL UNIQUE,
+    email         TEXT,                       -- sign-in identifier (normalised to lower case)
     password_hash BLOB NOT NULL,
     role          TEXT NOT NULL CHECK (role IN ('business_manager','credit_analyst','loan_officer','applicant')),
     full_name     TEXT,
@@ -112,6 +120,9 @@ CREATE INDEX IF NOT EXISTS idx_app_user ON loan_applications(user_id);
 CREATE INDEX IF NOT EXISTS idx_app_status ON loan_applications(status);
 CREATE INDEX IF NOT EXISTS idx_decisions_app ON application_decisions(application_id);
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+-- One account per email address, case-insensitively. Partial so the many legacy
+-- rows that have no email yet (NULL) are allowed to coexist.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique ON users(lower(email)) WHERE email IS NOT NULL;
 """
 
 
@@ -156,6 +167,7 @@ def _migrate_users_role(con: sqlite3.Connection) -> None:
         CREATE TABLE users_new (
             user_id       INTEGER PRIMARY KEY AUTOINCREMENT,
             username      TEXT NOT NULL UNIQUE,
+            email         TEXT,
             password_hash BLOB NOT NULL,
             role          TEXT NOT NULL CHECK (role IN ('business_manager','credit_analyst','loan_officer','applicant')),
             full_name     TEXT,
@@ -170,6 +182,21 @@ def _migrate_users_role(con: sqlite3.Connection) -> None:
     con.execute("PRAGMA foreign_keys = ON")
 
 
+def _migrate_users_email(con: sqlite3.Connection) -> None:
+    """Add the email column to a users table created before email sign-in.
+
+    Purely additive: existing rows keep their id, hash, role and relationships;
+    their email is left NULL (we never invent addresses). Setting an email for
+    such an account is a deliberate operator action (see `set_email`).
+    """
+    row = con.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'").fetchone()
+    if row is None:
+        return
+    columns = {r["name"] for r in con.execute("PRAGMA table_info(users)")}
+    if "email" not in columns:
+        con.execute("ALTER TABLE users ADD COLUMN email TEXT")
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -178,6 +205,7 @@ def init_db(path=None):
     """Create/migrate the schema, prune duplicates and stale sessions. Idempotent."""
     with connect(path) as con:
         _migrate_users_role(con)
+        _migrate_users_email(con)
         con.executescript(SCHEMA)
         con.execute(f"DELETE FROM model_runs WHERE run_id NOT IN "
                     f"(SELECT MIN(run_id) FROM model_runs GROUP BY {_MODEL_RUN_KEY})")
@@ -185,14 +213,67 @@ def init_db(path=None):
         con.execute("DELETE FROM auth_sessions WHERE expires_at < ?", (_now(),))
 
 
-def create_user(username: str, password: str, role: str, full_name: str | None = None, path=None):
+def hash_password(password: str) -> str:
+    """Hash a password with werkzeug.security (scrypt). Only hashes are stored."""
+    return generate_password_hash(password)
+
+
+def _is_legacy_bcrypt(stored) -> bool:
+    """True for a bcrypt hash written by an earlier release of this project."""
+    raw = bytes(stored) if isinstance(stored, (bytes, bytearray)) else str(stored).encode("utf-8", "ignore")
+    return raw.startswith((b"$2a$", b"$2b$", b"$2y$"))
+
+
+# Email addresses are the sign-in identifier. One small helper normalises them
+# (trim + lower case) so 'A@B.com ', 'a@b.com' and 'A@B.COM' are the same account.
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def normalize_email(email) -> str:
+    """Trim and lower-case an email so lookups and uniqueness are consistent."""
+    return str(email or "").strip().lower()
+
+
+def valid_email(email) -> bool:
+    """Basic server-side email sanity check (shape + length), not RFC completeness."""
+    e = normalize_email(email)
+    return bool(EMAIL_RE.match(e)) and len(e) <= 254
+
+
+def verify_password(stored, password: str) -> bool:
+    """Check a password against a stored hash without ever re-hashing the input.
+
+    Accounts created by this release store a werkzeug hash. Hashes written by
+    earlier releases (bcrypt) are still accepted so existing logins keep working.
+    """
+    if stored is None:
+        return False
+    text = stored.decode("utf-8", "ignore") if isinstance(stored, (bytes, bytearray)) else str(stored)
+    try:
+        verified = check_password_hash(text, password)
+    except (ValueError, TypeError):
+        verified = False          # e.g. a bcrypt hash: werkzeug does not recognise it
+    if verified:
+        return True
+    if bcrypt is not None and _is_legacy_bcrypt(stored):
+        try:
+            raw = bytes(stored) if isinstance(stored, (bytes, bytearray)) else stored.encode("utf-8")
+            return bcrypt.checkpw(password.encode("utf-8"), raw)
+        except (ValueError, TypeError):
+            return False
+    return False
+
+
+def create_user(username: str, password: str, role: str, full_name: str | None = None,
+                email: str | None = None, path=None):
     if role not in ROLES:
         raise ValueError(f"role must be one of {ROLES}")
-    pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    pw = hash_password(password)
+    norm_email = normalize_email(email) or None
     with connect(path) as con:
         cur = con.execute(
-            "INSERT INTO users(username, password_hash, role, full_name) VALUES (?,?,?,?)",
-            (username, pw, role, full_name))
+            "INSERT INTO users(username, email, password_hash, role, full_name) VALUES (?,?,?,?,?)",
+            (username, norm_email, pw, role, full_name))
     return cur.lastrowid
 
 
@@ -202,10 +283,20 @@ def has_users(path=None) -> bool:
 
 
 def set_password(username: str, password: str, path=None) -> bool:
-    pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+    pw = hash_password(password)
     with connect(path) as con:
         return con.execute("UPDATE users SET password_hash = ? WHERE username = ?",
                            (pw, username)).rowcount == 1
+
+
+def set_email(username: str, email: str, path=None) -> bool:
+    """Give a legacy account an email so it can sign in. Rejects invalid addresses."""
+    norm = normalize_email(email)
+    if not valid_email(norm):
+        raise ValueError("Enter a valid email address.")
+    with connect(path) as con:
+        return con.execute("UPDATE users SET email = ? WHERE username = ?",
+                           (norm, username)).rowcount == 1
 
 
 def get_user(user_id: int, path=None):
@@ -213,14 +304,32 @@ def get_user(user_id: int, path=None):
         return con.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)).fetchone()
 
 
-def verify_user(username: str, password: str, path=None):
-    """Return the public account dict if credentials are valid, else None."""
+def verify_user(email: str, password: str, path=None):
+    """Return the public account dict if the email + password are valid, else None.
+
+    The email is normalised before lookup (trim + lower case). The entered
+    password is checked against the stored hash (never re-hashed). A legacy bcrypt
+    hash is transparently upgraded to the werkzeug format on the next successful
+    sign-in, so no account needs to be reset by hand.
+    """
+    norm = normalize_email(email)
+    if not norm or not password:
+        return None
     with connect(path) as con:
-        row = con.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-    if row and row["is_active"] and bcrypt.checkpw(password.encode(), row["password_hash"]):
-        return {"user_id": row["user_id"], "username": row["username"], "role": row["role"],
-                "full_name": row["full_name"]}
-    return None
+        row = con.execute("SELECT * FROM users WHERE email = ?", (norm,)).fetchone()
+    if row is None or not row["is_active"]:
+        return None
+    if not verify_password(row["password_hash"], password):
+        return None
+    if _is_legacy_bcrypt(row["password_hash"]):
+        try:  # best effort: a failed upgrade must never block a valid sign-in
+            with connect(path) as con:
+                con.execute("UPDATE users SET password_hash = ? WHERE user_id = ?",
+                            (hash_password(password), row["user_id"]))
+        except sqlite3.Error:
+            pass
+    return {"user_id": row["user_id"], "username": row["username"], "email": row["email"],
+            "role": row["role"], "full_name": row["full_name"]}
 
 
 # ------------------------------------------------------------- sessions ------
@@ -248,7 +357,8 @@ def get_session(token: str, path=None):
     sid = _hash_token(token)
     with connect(path) as con:
         row = con.execute("""
-            SELECT s.session_id, s.csrf_token, s.expires_at, u.user_id, u.username, u.role, u.full_name
+            SELECT s.session_id, s.csrf_token, s.expires_at, u.user_id, u.username, u.email,
+                   u.role, u.full_name
             FROM auth_sessions s JOIN users u ON u.user_id = s.user_id
             WHERE s.session_id = ? AND u.is_active = 1""", (sid,)).fetchone()
         if row is None:
@@ -261,8 +371,8 @@ def get_session(token: str, path=None):
             con.execute("DELETE FROM auth_sessions WHERE session_id = ?", (sid,))
             return None
         con.execute("UPDATE auth_sessions SET last_seen = ? WHERE session_id = ?", (_now(), sid))
-    return {"user_id": row["user_id"], "username": row["username"], "role": row["role"],
-            "full_name": row["full_name"], "csrf_token": row["csrf_token"]}
+    return {"user_id": row["user_id"], "username": row["username"], "email": row["email"],
+            "role": row["role"], "full_name": row["full_name"], "csrf_token": row["csrf_token"]}
 
 
 def delete_session(token: str, path=None) -> bool:
@@ -302,15 +412,26 @@ def get_application(application_id: int, path=None):
                            (application_id,)).fetchone()
 
 
-def list_staff_applications(path=None) -> list[sqlite3.Row]:
+def list_staff_applications(officer_id: int | None = None, path=None) -> list[sqlite3.Row]:
+    """Rows for the staff workspace.
+
+    `officer_id=None` returns every application (business-manager / credit-analyst
+    view). When an officer id is given, only their permitted cases are returned:
+    the unassigned queue plus the applications assigned to that officer.
+    """
+    sql = """
+        SELECT a.*, u.username AS applicant_username, u.full_name AS applicant_name,
+               o.username AS officer_username
+        FROM loan_applications a
+        JOIN users u ON u.user_id = a.user_id
+        LEFT JOIN users o ON o.user_id = a.assigned_officer_id"""
+    params: tuple = ()
+    if officer_id is not None:
+        sql += " WHERE a.assigned_officer_id IS NULL OR a.assigned_officer_id = ?"
+        params = (officer_id,)
+    sql += " ORDER BY a.application_id DESC"
     with connect(path) as con:
-        return con.execute("""
-            SELECT a.*, u.username AS applicant_username, u.full_name AS applicant_name,
-                   o.username AS officer_username
-            FROM loan_applications a
-            JOIN users u ON u.user_id = a.user_id
-            LEFT JOIN users o ON o.user_id = a.assigned_officer_id
-            ORDER BY a.application_id DESC""").fetchall()
+        return con.execute(sql, params).fetchall()
 
 
 def assign_application(application_id: int, officer_id: int, path=None) -> bool:
@@ -410,23 +531,30 @@ def export_tables(out_dir=".", path=None):
     with connect(path) as con:
         for t in ("applicants", "predictions", "model_runs"):
             pd.read_sql_query(f"SELECT * FROM {t}", con).to_csv(f"{out_dir}/db_{t}.csv", index=False)
-        pd.read_sql_query("SELECT user_id, username, role, created_at FROM users", con)\
+        pd.read_sql_query("SELECT user_id, username, email, role, created_at FROM users", con)\
           .to_csv(f"{out_dir}/db_users.csv", index=False)
 
 
-DEMO_USERS = [("manager", "ChangeMe!1", "business_manager"),
-              ("analyst", "ChangeMe!2", "credit_analyst"),
-              ("officer", "ChangeMe!3", "loan_officer")]
+DEMO_USERS = [("manager", "ChangeMe!1", "business_manager", "manager@loancredit.example"),
+              ("analyst", "ChangeMe!2", "credit_analyst", "analyst@loancredit.example"),
+              ("officer", "ChangeMe!3", "loan_officer", "officer@loancredit.example")]
 
 
 def seed_demo(path=None, runs_csv="threshold_comparison.csv"):
     """Idempotent: safe to run any number of times."""
     init_db(path)
-    for u, pw, role in DEMO_USERS:
+    for username, password, role, email in DEMO_USERS:
         try:
-            create_user(u, pw, role, path)
+            create_user(username, password, role, email=email, path=path)
         except sqlite3.IntegrityError:
-            pass
+            # Account already exists: give the documented demo account its example
+            # email only if it has none - never overwrite an address an operator set.
+            try:
+                with connect(path) as con:
+                    con.execute("UPDATE users SET email = ? WHERE username = ?"
+                                " AND (email IS NULL OR email = '')", (email, username))
+            except sqlite3.IntegrityError:
+                pass
     if Path(runs_csv).exists():
         load_model_runs(runs_csv, path)
 
@@ -439,8 +567,12 @@ def main(argv=None):
     sub.add_parser("seed", help="create the DB, demo users and model_runs (default; idempotent)")
     a = sub.add_parser("add-user", help="create a user")
     a.add_argument("username"); a.add_argument("role", choices=ROLES)
+    a.add_argument("--email", default=None,
+                   help="sign-in email (required for the account to be able to sign in)")
     p = sub.add_parser("set-password", help="change a user's password")
     p.add_argument("username")
+    e = sub.add_parser("set-email", help="give an existing account its sign-in email")
+    e.add_argument("username"); e.add_argument("email")
     sub.add_parser("list-users", help="list accounts (never shows passwords)")
     args = ap.parse_args(argv)
 
@@ -450,16 +582,28 @@ def main(argv=None):
               "python db.py set-password <username>)")
     elif args.cmd == "add-user":
         init_db()
-        create_user(args.username, getpass.getpass("Password: "), args.role)
+        email = normalize_email(args.email) or None
+        if email and not valid_email(email):
+            raise SystemExit("Enter a valid email address.")
+        create_user(args.username, getpass.getpass("Password: "), args.role, email=email)
         print(f"Created {args.username} ({args.role})")
+        if not email:
+            print("No email set - this account cannot sign in until you run:\n"
+                  f"    python db.py set-email {args.username} <email>")
     elif args.cmd == "set-password":
         ok = set_password(args.username, getpass.getpass("New password: "))
         print("Password updated" if ok else "No such user")
+    elif args.cmd == "set-email":
+        try:
+            ok = set_email(args.username, args.email)
+        except ValueError as exc:
+            raise SystemExit(str(exc))
+        print("Email updated" if ok else "No such user")
     elif args.cmd == "list-users":
         init_db()
         with connect() as con:
-            for r in con.execute("SELECT username, role FROM users ORDER BY user_id"):
-                print(f"{r['username']:<20} {r['role']}")
+            for r in con.execute("SELECT username, email, role FROM users ORDER BY user_id"):
+                print(f"{r['username']:<20} {str(r['email'] or '-'):<34} {r['role']}")
 
 
 if __name__ == "__main__":

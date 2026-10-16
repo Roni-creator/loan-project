@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { apiGet } from "../../api.js";
 import { StatusBadge, TierBadge } from "../../components/Badge.jsx";
 import { useAuth } from "../../lib/auth.jsx";
-import { naira } from "../../lib/applyState.js";
+import { ksh } from "../../lib/applyState.js";
 
 function Metric({ label, value, hint }) {
   return (
@@ -28,7 +28,7 @@ function RecentTable({ rows }) {
             <tr key={r.application_id}>
               <td className="mono">{r.reference}</td>
               <td>{r.applicant_name || r.applicant_username}</td>
-              <td>{r.amount ? naira(r.amount) : "—"}</td>
+              <td>{r.amount ? ksh(r.amount) : "—"}</td>
               <td><TierBadge tier={r.tier} /></td>
               <td><StatusBadge status={r.status} /></td>
               <td>{r.officer_username || "—"}</td>
@@ -95,6 +95,9 @@ export default function StaffDashboard() {
     credit_analyst: "Assessment workspace — model predictions and explanations.",
     loan_officer: "Your queue — review and decide the applications assigned to you.",
   }[user.role];
+  // Personal applicant records are for analysts and officers; a business manager
+  // gets aggregate management information only.
+  const isManager = user.role === "business_manager";
 
   return (
     <>
@@ -103,7 +106,7 @@ export default function StaffDashboard() {
           <h2>Welcome, {user.full_name || user.username}</h2>
           <p className="sub">{roleHint}</p>
         </div>
-        <Link to="/staff/applications" className="primary">All applications</Link>
+        {!isManager && <Link to="/staff/applications" className="primary">All applications</Link>}
       </div>
 
       <div className="sum">
@@ -137,13 +140,23 @@ export default function StaffDashboard() {
         </div>
       </div>
 
-      <section className="card" style={{ marginTop: 18 }}>
-        <div className="card-head">
-          <h3>Recent applications</h3>
-          <Link className="link" to="/staff/applications">View all</Link>
-        </div>
-        <RecentTable rows={summary.recent} />
-      </section>
+      {isManager ? (
+        <section className="card" style={{ marginTop: 18 }}>
+          <h3>Portfolio overview</h3>
+          <p className="sub">
+            Management view: counts and assessment mix across all applications. Personal
+            applicant records are accessible to credit analysts and loan officers only.
+          </p>
+        </section>
+      ) : (
+        <section className="card" style={{ marginTop: 18 }}>
+          <div className="card-head">
+            <h3>Recent applications</h3>
+            <Link className="link" to="/staff/applications">View all</Link>
+          </div>
+          <RecentTable rows={summary.recent} />
+        </section>
+      )}
 
       {models && <ModelPanel models={models} />}
     </>

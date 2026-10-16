@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { naira } from "../../lib/applyState.js";
+import { ksh } from "../../lib/applyState.js";
 
 const OUTCOME = { likely: "Looks good", review: "Closer look", refer: "Review" };
 
@@ -8,7 +8,7 @@ function FactorRows({ factors }) {
   return factors.map((f) => {
     const width = (Math.abs(f.value) / max) * 50;
     const side = f.value >= 0 ? { left: "50%" } : { right: "50%" };
-    const color = f.driver === "willingness" ? "var(--orange)" : "var(--teal)";
+    const color = f.driver === "willingness" ? "var(--gold)" : "var(--teal)";
     return (
       <div className="fac" key={f.feature} title={`${f.value >= 0 ? "Helps" : "Works against"} your application`}>
         <span>{f.factor}</span>
@@ -42,10 +42,10 @@ export default function ResultView({ r, reference, consent, onConsent, onSubmit,
       <div className={"banner " + r.tier}><b>{r.headline}</b><p>{r.message}</p></div>
 
       <div className="sum">
-        <div className="metric"><small>You borrow</small><b>{naira(r.loan.amount)}</b></div>
+        <div className="metric"><small>You borrow</small><b>{ksh(r.loan.amount)}</b></div>
         <div className="metric">
           <small>{`You repay (${Math.round(r.loan.interest * 100)}% interest)`}</small>
-          <b>{naira(r.loan.repay)}</b>
+          <b>{ksh(r.loan.repay)}</b>
         </div>
         <div className="metric"><small>Within</small><b>{`${r.loan.term} days`}</b></div>
       </div>
@@ -56,7 +56,7 @@ export default function ResultView({ r, reference, consent, onConsent, onSubmit,
       <FactorRows factors={r.factors} />
       <div className="axis"><span>{"← works against you"}</span><span>{"helps you →"}</span></div>
       <div className="legend">
-        <span><i className="dot" style={{ background: "var(--orange)" }} />Willingness to pay (how you've repaid before)</span>
+        <span><i className="dot" style={{ background: "var(--gold)" }} />Willingness to pay (how you've repaid before)</span>
         <span><i className="dot" style={{ background: "var(--teal)" }} />Ability to pay / profile (the loan and your circumstances)</span>
       </div>
       <p className="fine" style={{ textAlign: "left" }}>
@@ -65,8 +65,8 @@ export default function ResultView({ r, reference, consent, onConsent, onSubmit,
 
       <h3>What if I change my request?</h3>
       <div className="wi">
-        <WhatIf title={`Different amount, ${r.loan.term} days`} items={r.what_if.amounts} fmtVal={naira} />
-        <WhatIf title={`Different period, ${naira(r.loan.amount)}`} items={r.what_if.terms} fmtVal={(t) => `${t} days`} />
+        <WhatIf title={`Different amount, ${r.loan.term} days`} items={r.what_if.amounts} fmtVal={ksh} />
+        <WhatIf title={`Different period, ${ksh(r.loan.amount)}`} items={r.what_if.terms} fmtVal={(t) => `${t} days`} />
       </div>
 
       <details>

@@ -61,16 +61,63 @@ def test_init_removes_existing_duplicate_runs(dbpath, runs_csv):
 
 def test_login_verification(dbpath):
     db.init_db()
-    db.create_user("amy", "s3cret", "credit_analyst")
-    assert db.verify_user("amy", "s3cret")["role"] == "credit_analyst"
-    assert db.verify_user("amy", "wrong") is None
-    assert db.verify_user("nobody", "s3cret") is None
+    db.create_user("amy", "s3cret", "credit_analyst", email="Amy@Example.com")
+    # Sign-in is by email; the stored address is normalised (trim + lower case).
+    assert db.verify_user("amy@example.com", "s3cret")["role"] == "credit_analyst"
+    assert db.verify_user("  AMY@EXAMPLE.COM  ", "s3cret")["username"] == "amy"
+    assert db.verify_user("amy", "s3cret") is None           # username is no longer an identifier
+    assert db.verify_user("amy@example.com", "wrong") is None
+    assert db.verify_user("nobody@example.com", "s3cret") is None
     with pytest.raises(sqlite3.IntegrityError):
-        db.create_user("amy", "x", "loan_officer")
+        db.create_user("amy", "x", "loan_officer", email="other@example.com")   # username collision
     with pytest.raises(ValueError):
         db.create_user("bob", "x", "admin")
     with db.connect() as con:                      # stored as a hash, never plain text
-        assert b"s3cret" not in con.execute("SELECT password_hash FROM users").fetchone()[0]
+        stored = con.execute("SELECT password_hash FROM users").fetchone()[0]
+    text = stored.decode() if isinstance(stored, (bytes, bytearray)) else stored
+    assert "s3cret" not in text
+    assert text.startswith(("scrypt:", "pbkdf2:"))
+
+
+def test_email_uniqueness_and_normalisation(dbpath):
+    db.init_db()
+    db.create_user("u1", "pw123456", "applicant", email="Person@Example.COM")
+    with db.connect() as con:
+        assert con.execute("SELECT email FROM users WHERE username='u1'").fetchone()[0] == "person@example.com"
+    with pytest.raises(sqlite3.IntegrityError):        # case-insensitive uniqueness
+        db.create_user("u2", "pw123456", "applicant", email="person@example.com")
+    # Legacy accounts may still have no email (NULL); several must coexist.
+    db.create_user("u3", "pw123456", "applicant")
+    db.create_user("u4", "pw123456", "applicant")
+
+
+def test_email_migration_is_additive(dbpath):
+    """An old database (no email column) migrates without losing accounts or hashes."""
+    import bcrypt
+    con = db.connect()
+    con.execute("""CREATE TABLE users (
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password_hash BLOB NOT NULL,
+        role TEXT NOT NULL,
+        full_name TEXT,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)""")
+    legacy = bcrypt.hashpw(b"LegacyPass9", bcrypt.gensalt())
+    con.execute("INSERT INTO users(user_id, username, password_hash, role) VALUES (500,?,?,?)",
+                ("legacy_staff", legacy, "credit_analyst"))
+    con.commit()
+    con.close()
+
+    db.init_db()                                       # must not drop or rewrite existing accounts
+    row = db.get_user(500)
+    assert row["username"] == "legacy_staff" and row["role"] == "credit_analyst"
+    assert row["email"] is None                        # never invented
+    assert db.verify_password(row["password_hash"], "LegacyPass9")   # hash preserved
+    assert db.set_email("legacy_staff", " Legacy.Staff@Example.COM ")
+    assert db.verify_user("legacy.staff@example.com", "LegacyPass9")["user_id"] == 500
+    with pytest.raises(ValueError):
+        db.set_email("legacy_staff", "not-an-email")
 
 
 def test_log_prediction_decision_rule(dbpath):
@@ -147,16 +194,16 @@ def test_clean_startup_shows_login_and_blocks_app(app_test):
 
 
 def test_bad_login_is_rejected(app_test):
-    at = _login(app_test.run(), "officer", "wrong")
-    assert any("Invalid" in e.value for e in at.error)
+    at = _login(app_test.run(), "officer@loancredit.example", "wrong")
+    assert any("Invalid email or password" in e.value for e in at.error)
     assert len(at.sidebar.radio) == 0
 
 
 @pytest.mark.skipif(not have_artifacts, reason="run the pipeline first")
 @pytest.mark.parametrize("user,pw,pages", [
-    ("manager", "ChangeMe!1", ["Portfolio overview"]),
-    ("analyst", "ChangeMe!2", ["Portfolio overview", "Model evaluation"]),
-    ("officer", "ChangeMe!3", ["Score applications"]),
+    ("manager@loancredit.example", "ChangeMe!1", ["Portfolio overview"]),
+    ("analyst@loancredit.example", "ChangeMe!2", ["Portfolio overview", "Model evaluation"]),
+    ("officer@loancredit.example", "ChangeMe!3", ["Score applications"]),
 ])
 def test_roles_see_only_their_pages(app_test, user, pw, pages):
     at = _login(app_test.run(), user, pw)
@@ -183,13 +230,13 @@ def test_login_page_tells_user_to_seed_when_no_accounts(dbpath):
 def test_db_cli_add_user_and_set_password(dbpath, monkeypatch, capsys):
     pws = iter(["first-pw", "second-pw"])
     monkeypatch.setattr("getpass.getpass", lambda *_: next(pws))
-    db.main(["add-user", "jane", "credit_analyst"])
-    assert db.verify_user("jane", "first-pw")
+    db.main(["add-user", "jane", "credit_analyst", "--email", "jane@example.com"])
+    assert db.verify_user("jane@example.com", "first-pw")
     db.main(["set-password", "jane"])
-    assert db.verify_user("jane", "second-pw") and db.verify_user("jane", "first-pw") is None
+    assert db.verify_user("jane@example.com", "second-pw") and db.verify_user("jane@example.com", "first-pw") is None
     db.main(["list-users"])
     out = capsys.readouterr().out
-    assert "jane" in out and "second-pw" not in out
+    assert "jane" in out and "jane@example.com" in out and "second-pw" not in out
 
 
 # ------------------------ raw category uploads -------------------------------

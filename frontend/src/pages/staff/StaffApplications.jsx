@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGet } from "../../api.js";
 import { StatusBadge, TierBadge } from "../../components/Badge.jsx";
-import { naira } from "../../lib/applyState.js";
+import { ksh } from "../../lib/applyState.js";
 
 const FILTERS = [
   ["all", "All"],
@@ -77,7 +77,7 @@ export default function StaffApplications() {
                 <tr key={a.application_id}>
                   <td className="mono">{a.reference}</td>
                   <td>{a.applicant_name || a.applicant_username}</td>
-                  <td>{a.amount ? naira(a.amount) : "—"}</td>
+                  <td>{a.amount ? ksh(a.amount) : "—"}</td>
                   <td><TierBadge tier={a.tier} /></td>
                   <td><StatusBadge status={a.status} /></td>
                   <td>{a.officer_username || "—"}</td>

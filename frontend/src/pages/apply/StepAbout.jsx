@@ -7,6 +7,17 @@ export default function StepAbout({ meta, app, setProfileValue, onBack, onNext }
   const max = new Date();
   max.setFullYear(max.getFullYear() - 18);
 
+  // Every personal field is the signed-in applicant's own choice; nothing is
+  // pre-filled from a shared sample record.
+  const next = () => {
+    if (!app.profile.dob) return setError("Enter your date of birth.");
+    if (!app.profile.employment) return setError("Choose your employment status.");
+    if (!app.profile.bank) return setError("Choose your bank.");
+    if (!app.profile.account) return setError("Choose your account type.");
+    setError("");
+    onNext();
+  };
+
   return (
     <>
       <h2>About you</h2>
@@ -29,8 +40,7 @@ export default function StepAbout({ meta, app, setProfileValue, onBack, onNext }
       <p className="msg err">{error}</p>
       <div className="nav">
         <button type="button" onClick={onBack}>Back</button>
-        <button className="primary" type="button"
-          onClick={() => (app.profile.dob ? onNext() : setError("Enter your date of birth."))}>
+        <button className="primary" type="button" onClick={next}>
           Continue
         </button>
       </div>

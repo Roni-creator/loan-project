@@ -8,7 +8,7 @@ export default function Login() {
   const notify = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const [form, setForm] = useState({ username: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -17,14 +17,14 @@ export default function Login() {
   const submit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!form.username.trim() || !form.password) {
-      setError("Enter your username and password.");
+    if (!form.email.trim() || !form.password) {
+      setError("Enter your email and password.");
       return;
     }
     setBusy(true);
     try {
-      const account = await login(form.username.trim(), form.password);
-      notify(`Welcome back, ${account.full_name || account.username}.`, "success");
+      const account = await login(form.email.trim(), form.password);
+      notify(`Welcome back, ${account.full_name || account.email || account.username}.`, "success");
       const dest = location.state?.from || homeFor(account.role);
       navigate(dest, { replace: true });
     } catch (err) {
@@ -41,10 +41,10 @@ export default function Login() {
         <p className="sub">Access your loan applications or staff workspace.</p>
         <form onSubmit={submit} noValidate>
           <label className="f">
-            Username
+            Email
             <input
-              type="text" autoComplete="username" value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              type="email" name="email" autoComplete="email" value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </label>
           <label className="f" style={{ marginTop: 12 }}>

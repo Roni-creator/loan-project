@@ -5,8 +5,11 @@ Login and role-based access for the Streamlit app.
     login.sidebar_account(user)       # "Signed in as ..." + Sign out button
     pages = login.allowed_pages(user) # pages this user's role may open
 
-Accounts live in the SQLite `users` table (see db.py); passwords are bcrypt hashes.
-Create accounts with `python db.py` (demo users) or `python db.py add-user <name> <role>`.
+Accounts live in the SQLite `users` table (see db.py); sign-in is by email address
+and password. Passwords are stored only as hashes (werkzeug.security) and verified
+with check_password_hash on sign-in.
+Create accounts with `python db.py` (demo users) or
+`python db.py add-user <name> <role> --email <email>`.
 
 Role -> pages (maps to the three dashboards in the proposal):
     business_manager -> Portfolio overview
@@ -36,15 +39,15 @@ def show_login() -> bool:
         st.warning("No accounts exist yet. Run `python db.py` in the project folder to "
                    "create the database and demo accounts, then reload this page.")
     with st.form("login"):
-        username = st.text_input("Username")
+        email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         submitted = st.form_submit_button("Sign in")
     if submitted:
-        user = db.verify_user(username.strip(), password)
+        user = db.verify_user(email, password)
         if user:
             st.session_state["user"] = user
             st.rerun()
-        st.error("Invalid username or password.")
+        st.error("Invalid email or password.")
     return False
 
 
@@ -56,7 +59,8 @@ def require_login() -> dict:
 
 
 def sidebar_account(user: dict) -> None:
-    st.sidebar.write(f"Signed in as **{user['username']}** ({user['role'].replace('_', ' ')})")
+    st.sidebar.write(f"Signed in as **{user.get('email') or user['username']}** "
+                     f"({user['role'].replace('_', ' ')})")
     if st.sidebar.button("Sign out"):
         st.session_state.pop("user", None)
         st.rerun()
