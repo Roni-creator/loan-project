@@ -388,6 +388,67 @@ def test_business_manager_gets_aggregates_not_personal_details(client):
     assert bm.get("/api/staff/models").status_code == 403
 
 
+def test_portfolio_overview_is_manager_only(client):
+    # anonymous callers get 401, never aggregates
+    assert client.get("/api/staff/portfolio").status_code == 401
+
+    applicant = client.application.test_client()
+    _submit(applicant)
+    assert applicant.get("/api/staff/portfolio").status_code == 403
+
+    ca = client.application.test_client()
+    login(ca, "ca@example.com", "An@lyst9pw")
+    assert ca.get("/api/staff/portfolio").status_code == 403
+
+    lo = client.application.test_client()
+    login(lo, "lo@example.com", "L0anOff9pw")
+    assert lo.get("/api/staff/portfolio").status_code == 403
+
+    # the analyst/officer routes they do use keep working
+    assert ca.get("/api/staff/applications").status_code == 200
+    assert lo.get("/api/staff/applications").status_code == 200
+
+    bm = client.application.test_client()
+    login(bm, "bm@example.com", "Bm@nger9pw")
+    resp = bm.get("/api/staff/portfolio")
+    assert resp.status_code == 200
+    body = resp.get_json()
+
+    # figures come from the database rows, not from example values
+    assert body["total_applications"] == 1
+    assert body["assessed"] + body["unassessed"] == body["total_applications"]
+    assert body["assessed"] == 1                       # scoring ran at submit time
+    assert sum(body["by_tier"].values()) == body["total_applications"]
+    assert sum(body["by_status"].values()) == body["total_applications"]
+    assert body["amounts"]["count"] == 1 and body["amounts"]["total"] == 10000
+    assert len(body["trend"]["points"]) == 30
+    assert sum(p["count"] for p in body["trend"]["points"]) == body["trend"]["total_in_window"]
+
+    # aggregates only: no names, emails, references or per-application rows
+    text = json.dumps(body).lower()
+    for leak in ("alice", "alice@example.com", "reference", "username", "full_name",
+                 "answers", "application_id", "dob", "note"):
+        assert leak not in text
+
+
+def test_portfolio_overview_empty_portfolio_is_safe(client):
+    bm = client.application.test_client()
+    login(bm, "bm@example.com", "Bm@nger9pw")
+    body = bm.get("/api/staff/portfolio").get_json()
+
+    assert body["total_applications"] == 0
+    assert body["assessed"] == body["unassessed"] == 0
+    assert body["assessed_pct"] == 0.0                    # zero denominator, no crash
+    assert set(body["by_tier"].values()) == {0}
+    assert all(v == 0.0 for v in body["by_tier_pct"].values())
+    assert all(v == 0.0 for v in body["by_status_pct"].values())
+    assert body["amounts"]["count"] == 0 and body["amounts"]["total"] == 0
+    assert body["amounts"]["average"] is None and body["amounts"]["min"] is None
+    assert body["trend"]["total_in_window"] == 0
+    assert len(body["trend"]["points"]) == 30
+    assert body["first_submission"] is None and body["last_submission"] is None
+
+
 def test_credit_analyst_can_assess_but_not_decide(client):
     applicant = client.application.test_client()
     app = _submit(applicant)

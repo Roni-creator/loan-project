@@ -18,6 +18,8 @@ Endpoints
   Staff (business_manager / credit_analyst / loan_officer)
     GET  /api/staff/summary                     portfolio counts + thresholds (all staff;
                                                 business managers get aggregates, no personal data)
+    GET  /api/staff/portfolio                   aggregate portfolio overview (business_manager
+                                                only: counts, risk mix, amounts, trend - no PII)
     GET  /api/staff/applications                application list (credit_analyst / loan_officer;
                                                 a loan officer sees the unassigned queue + own cases)
     GET  /api/staff/applications/<id>           full assessment + explanation (same roles)
@@ -31,7 +33,7 @@ import json
 import re
 import sqlite3
 import uuid
-from datetime import date
+from datetime import date, timedelta
 
 from flask import Blueprint, g, jsonify, request
 
@@ -44,6 +46,10 @@ bp = Blueprint("api", __name__)
 USERNAME_RE = re.compile(r"^[A-Za-z0-9._-]{3,32}$")
 DECISIONS = ("approved", "declined", "more_info")
 STATUSES = ("submitted", "assigned", "approved", "declined", "more_info")
+# Model risk classifications stored in loan_applications.tier (see db.py schema).
+TIERS = ("likely", "review", "refer")
+# Daily submission trend covers this many days ending today (UTC, like created_at).
+TREND_WINDOW_DAYS = 30
 
 
 def _json_body() -> dict:
@@ -53,6 +59,19 @@ def _json_body() -> dict:
 
 def _bad(message: str, code: int = 400):
     return jsonify(error=message), code
+
+
+def _pct(part: int, whole: int) -> float:
+    """Share of `whole` as a percentage, safe when the denominator is zero."""
+    return round(part * 100.0 / whole, 1) if whole else 0.0
+
+
+def _zero_filled(codes, rows: dict) -> dict:
+    """Every expected code present (0 when absent), plus any unexpected value."""
+    out = {c: rows.get(c, 0) for c in codes}
+    for key, value in rows.items():
+        out.setdefault(key, value)
+    return out
 
 
 # ----------------------------------------------------------- serialization ---
@@ -282,6 +301,93 @@ def staff_summary():
         recent=[_staff_application_row(r, include_personal) for r in rows[:10]],
         model_runs=[dict(r) for r in runs],
         thresholds=core.reference()["thresholds"],
+    )
+
+
+@bp.get("/api/staff/portfolio")
+@auth.require_roles("business_manager")
+def staff_portfolio():
+    """Aggregate portfolio overview for the business manager.
+
+    Counts, distributions and sums only - no references, account names, notes,
+    applicant details or individual application rows leave this endpoint.
+    """
+    with db.connect() as con:
+        total = con.execute("SELECT COUNT(*) FROM loan_applications").fetchone()[0]
+        # "Assessed" = the application produced model output (one row per model).
+        assessed = con.execute("""
+            SELECT COUNT(*) FROM loan_applications a
+            WHERE a.applicant_id IS NOT NULL
+              AND EXISTS (SELECT 1 FROM predictions p WHERE p.applicant_id = a.applicant_id)
+        """).fetchone()[0]
+        tiers = {r["tier"]: r["n"] for r in con.execute(
+            "SELECT tier, COUNT(*) AS n FROM loan_applications GROUP BY tier")}
+        statuses = {r["status"]: r["n"] for r in con.execute(
+            "SELECT status, COUNT(*) AS n FROM loan_applications GROUP BY status")}
+        decisions = {r["decision"]: r["n"] for r in con.execute(
+            "SELECT decision, COUNT(*) AS n FROM application_decisions GROUP BY decision")}
+        # Requested amounts/terms live inside the stored answers JSON.
+        amounts = con.execute("""
+            SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS total,
+                   MIN(amount) AS lowest, MAX(amount) AS highest,
+                   AVG(amount) AS average, AVG(term) AS average_term
+            FROM (SELECT json_extract(answers, '$.amount') AS amount,
+                         json_extract(answers, '$.term')  AS term
+                  FROM loan_applications)
+            WHERE typeof(amount) IN ('integer', 'real')
+        """).fetchone()
+        window_start = con.execute(
+            "SELECT date('now', ?)", (f"-{TREND_WINDOW_DAYS - 1} day",)).fetchone()[0]
+        window_end = con.execute("SELECT date('now')").fetchone()[0]
+        by_day = {r["d"]: r["n"] for r in con.execute(
+            "SELECT date(created_at) AS d, COUNT(*) AS n FROM loan_applications"
+            " WHERE date(created_at) >= ? GROUP BY d", (window_start,))}
+        span = con.execute(
+            "SELECT MIN(created_at), MAX(created_at) FROM loan_applications").fetchone()
+
+    # Daily series, zero-filled so the chart axis is complete.
+    start, end = date.fromisoformat(window_start), date.fromisoformat(window_end)
+    points = []
+    for i in range(max((end - start).days, 0) + 1):
+        day = (start + timedelta(days=i)).isoformat()
+        points.append({"date": day, "count": by_day.get(day, 0)})
+
+    by_tier = _zero_filled(TIERS, tiers)
+    by_status = _zero_filled(STATUSES, statuses)
+    amount_count = int(amounts["n"] or 0)
+
+    def money(value, nd):
+        """JSON-safe number, or None when the column had no usable value."""
+        return None if value is None else round(float(value), nd)
+
+    return jsonify(
+        total_applications=total,
+        assessed=assessed,
+        unassessed=total - assessed,
+        assessed_pct=_pct(assessed, total),
+        by_tier=by_tier,
+        by_tier_pct={t: _pct(n, total) for t, n in by_tier.items()},
+        by_status=by_status,
+        by_status_pct={s: _pct(n, total) for s, n in by_status.items()},
+        by_decision=_zero_filled(DECISIONS, decisions),
+        amounts={
+            "count": amount_count,
+            "missing": total - amount_count,
+            "total": money(amounts["total"], 2),
+            "min": money(amounts["lowest"], 2),
+            "max": money(amounts["highest"], 2),
+            "average": money(amounts["average"], 2),
+            "average_term_days": money(amounts["average_term"], 1),
+        },
+        trend={
+            "window_days": TREND_WINDOW_DAYS,
+            "start": window_start,
+            "end": window_end,
+            "total_in_window": sum(p["count"] for p in points),
+            "points": points,
+        },
+        first_submission=span[0],
+        last_submission=span[1],
     )
 
 

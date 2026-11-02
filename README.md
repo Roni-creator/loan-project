@@ -135,9 +135,9 @@ real mail.
 
 | Email | Password | Role | Can do |
 |---|---|---|---|
-| `manager@loancredit.example` | `ChangeMe!1` | business_manager | Aggregate portfolio summaries (counts, mix, model metrics) — **no personal applicant records** |
-| `analyst@loancredit.example` | `ChangeMe!2` | credit_analyst | Read applications and assessments (read-only), plus model insights (metrics, thresholds, drivers) |
-| `officer@loancredit.example` | `ChangeMe!3` | loan_officer | See the unassigned queue and **their own** cases; claim and record decisions |
+| `manager@loancredit.example` | `manager@123` | business_manager | Aggregate portfolio summaries (counts, mix, model metrics) — **no personal applicant records** |
+| `analyst@loancredit.example` | `analyst@123` | credit_analyst | Read applications and assessments (read-only), plus model insights (metrics, thresholds, drivers) |
+| `officer@loancredit.example` | `officer@123` | loan_officer | See the unassigned queue and **their own** cases; claim and record decisions |
 | _self-registered_ | — | applicant | Submit applications and view **only their own** history/status/results |
 
 Role checks are enforced by Flask on every request from the server-side session; the

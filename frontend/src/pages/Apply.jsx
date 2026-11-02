@@ -30,7 +30,7 @@ export default function Apply() {
   return (
     <>
       <Hero title="Apply for a loan">
-        Answer a few questions and get an instant, indicative result <b>with the reasons behind it</b> — no black box.
+        Answer a few questions and get an instant, indicative result <b>with the reasons behind it</b> 
       </Hero>
       <main className="wrap">
         <Stepper step={step} />

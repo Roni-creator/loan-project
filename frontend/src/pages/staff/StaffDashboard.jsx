@@ -70,6 +70,127 @@ function ModelPanel({ models }) {
   );
 }
 
+function PortfolioOverview() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGet("/api/staff/portfolio")
+      .then((d) => !cancelled && setData(d))
+      .catch((e) => !cancelled && setError(e.message));
+    return () => { cancelled = true; };
+  }, []);
+
+  if (error) return <p className="msg err" role="alert">Portfolio overview unavailable: {error}</p>;
+  if (!data) return <div className="spin">Loading portfolio overview…</div>;
+
+  const points = data.trend?.points || [];
+  const days = points.filter((p) => p.count > 0);
+  const decisions = Object.values(data.by_decision || {}).reduce((sum, n) => sum + n, 0);
+  const money = (v) => (v == null ? "—" : ksh(v));
+
+  if (!data.total_applications) {
+    return (
+      <section className="card" style={{ marginTop: 18 }}>
+        <h3>Portfolio overview</h3>
+        <p className="empty-note">
+          No applications have been submitted yet. Totals, risk mix and submission
+          trends will appear here.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <>
+      <section className="card" style={{ marginTop: 18 }}>
+        <div className="card-head">
+          <h3>Portfolio overview</h3>
+          <span className="hint">
+            Across {data.total_applications} application{data.total_applications === 1 ? "" : "s"}
+          </span>
+        </div>
+        <p className="sub">
+          Counts and sums only. Personal applicant records stay with credit analysts
+          and loan officers.
+        </p>
+
+        <div className="sum">
+          <Metric label="Assessed by models" value={data.assessed} hint={`${data.assessed_pct}% of total`} />
+          <Metric label="Not yet assessed" value={data.unassessed}
+            hint={data.unassessed ? "Awaiting model output" : "All applications scored"} />
+          <Metric label="Requested in total" value={money(data.amounts.total)}
+            hint={data.amounts.count ? `${data.amounts.count} with amounts` : "No amounts recorded"} />
+          <Metric label="Average requested" value={money(data.amounts.average)}
+            hint={data.amounts.average_term_days == null ? null
+              : `Average term ${data.amounts.average_term_days} days`} />
+          <Metric label={`Submissions (last ${data.trend.window_days} days)`} value={data.trend.total_in_window}
+            hint={`${data.trend.start} → ${data.trend.end}`} />
+          <Metric label="Decisions recorded" value={decisions} hint="Approved / declined / more info" />
+        </div>
+
+        <div className="grid-2" style={{ marginTop: 18 }}>
+          <div>
+            <h3>Risk classification</h3>
+            <ul className="stats-list">
+              {Object.entries(data.by_tier).map(([tier, n]) => (
+                <li key={tier}>
+                  <TierBadge tier={tier} />
+                  <b>{n} <span className="hint">({data.by_tier_pct?.[tier] ?? 0}%)</span></b>
+                </li>
+              ))}
+            </ul>
+            <p className="sub" style={{ marginTop: 10 }}>
+              Model tier is indicative; a loan officer makes the decision.
+            </p>
+          </div>
+          <div>
+            <h3>Decision outcomes</h3>
+            {decisions === 0 ? (
+              <p className="empty-note">No decisions recorded yet.</p>
+            ) : (
+              <ul className="stats-list">
+                {Object.entries(data.by_decision).map(([name, n]) => (
+                  <li key={name}><span>{name.replace("_", " ")}</span><b>{n}</b></li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 18 }}>
+        <div className="card-head">
+          <h3>Submission trend</h3>
+          <span className="hint">
+            {data.trend.total_in_window} in the last {data.trend.window_days} days
+          </span>
+        </div>
+        {days.length === 0 ? (
+          <p className="empty-note">
+            No submissions in the last {data.trend.window_days} days.
+          </p>
+        ) : (
+          <ul className="stats-list">
+            {days.map((p) => (
+              <li key={p.date}>
+                <span className="mono">{p.date}</span>
+                <b>{p.count}</b>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="sub" style={{ marginTop: 10 }}>
+          {data.first_submission
+            ? `First submission ${data.first_submission.slice(0, 10)} · latest ${data.last_submission.slice(0, 10)}`
+            : "No submissions recorded."}
+        </p>
+      </section>
+    </>
+  );
+}
+
 export default function StaffDashboard() {
   const { user } = useAuth();
   const [summary, setSummary] = useState(null);
@@ -141,13 +262,7 @@ export default function StaffDashboard() {
       </div>
 
       {isManager ? (
-        <section className="card" style={{ marginTop: 18 }}>
-          <h3>Portfolio overview</h3>
-          <p className="sub">
-            Management view: counts and assessment mix across all applications. Personal
-            applicant records are accessible to credit analysts and loan officers only.
-          </p>
-        </section>
+        <PortfolioOverview />
       ) : (
         <section className="card" style={{ marginTop: 18 }}>
           <div className="card-head">
