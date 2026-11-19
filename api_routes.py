@@ -228,6 +228,7 @@ def submit_application(payload: dict):
     reference = "APP-" + uuid.uuid4().hex[:8].upper()
     application_id = db.create_application(reference, user["user_id"], _json_p(p), tier,
                                            applicant_id=applicant_id)
+    db.try_export_tables()
     auth.audit("application_submitted", f"reference={reference} tier={tier}")
     return {"application_id": application_id, "reference": reference, "status": "submitted",
             "tier": tier, "scores": scores}, 201
@@ -440,7 +441,10 @@ def assign(application_id: int):
         return _bad("Application not found.", 404)
     if row["assigned_officer_id"] not in (None, user["user_id"]):
         return _bad("This application is already assigned to another officer.", 409)
-    db.assign_application(application_id, user["user_id"])
+    changed = db.assign_application(application_id, user["user_id"])
+    if not changed:
+        return _bad("Application could not be assigned.", 409)
+    db.try_export_tables()
     auth.audit("application_assigned", f"id={application_id}")
     return jsonify(ok=True, assigned_officer_id=user["user_id"], status="assigned")
 
@@ -461,7 +465,10 @@ def decide(application_id: int):
         return _bad("Claim this application before recording a decision.", 403)
     if decision in ("declined", "more_info") and not note:
         return _bad("Please add a note explaining the decision.")
-    db.decide_application(application_id, user["user_id"], decision, note)
+    changed = db.decide_application(application_id, user["user_id"], decision, note)
+    if not changed:
+        return _bad("Application could not be updated.", 409)
+    db.try_export_tables()
     auth.audit("application_decision", f"id={application_id} decision={decision}")
     return jsonify(ok=True, status=decision)
 

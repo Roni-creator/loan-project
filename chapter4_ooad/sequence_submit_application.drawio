@@ -1,0 +1,270 @@
+<mxfile host="app.diagrams.net" agent="opencode" version="24.7.7" type="device">
+  <diagram id="chapter4-submit_application" name="Sequence Diagram — Submit Loan Application">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;div style='font-size:20px;font-weight:bold;color:#1F3864;'&gt;Sequence Diagram — Submit Loan Application&lt;/div&gt;&lt;div style='font-size:11.5px;color:#5A6272;'&gt;SD-2 · Use case: Submit loan application · primary actor: Applicant · authenticated write · A3 landscape · native, editable draw.io&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;spacing=0;strokeColor=none;fillColor=none;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40.0" y="6.0" width="1520.0" height="42.0" as="geometry" />
+        </mxCell>
+        <mxCell id="glyph_applicant" value="" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeWidth=1.5;strokeColor=#5B3E96;" vertex="1" parent="1">
+          <mxGeometry x="94.5" y="52.0" width="26.0" height="36.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_applicant" value="&lt;b&gt;Applicant&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«actor»&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F1ECFA;strokeColor=#5B3E96;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#5B3E96;" vertex="1" parent="1">
+          <mxGeometry x="40.0" y="92.0" width="135.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_applicant" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="106.5" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_webapp" value="&lt;b&gt;WebApp&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«boundary» webapp.py&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF1F8;strokeColor=#1F3864;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#1F3864;" vertex="1" parent="1">
+          <mxGeometry x="317.8" y="92.0" width="145.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_webapp" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="389.3" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_auth" value="&lt;b&gt;AuthGuard&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«service» auth.py&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EEF1F6;strokeColor=#44546A;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#44546A;" vertex="1" parent="1">
+          <mxGeometry x="605.6" y="92.0" width="135.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_auth" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="672.1" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_api" value="&lt;b&gt;ApiBlueprint&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«control» api_routes.py&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F1ECFA;strokeColor=#5B3E96;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#5B3E96;" vertex="1" parent="1">
+          <mxGeometry x="883.4" y="92.0" width="150.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_api" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="957.4" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_scoring" value="&lt;b&gt;ScoringService&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«service» portal_core.py&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D9EAE5;strokeColor=#155E56;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#155E56;" vertex="1" parent="1">
+          <mxGeometry x="1176.2" y="92.0" width="160.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_scoring" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1255.2" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_db" value="&lt;b&gt;Database&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«entity» db.py&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F6EBDD;strokeColor=#8A5A2B;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#8A5A2B;" vertex="1" parent="1">
+          <mxGeometry x="1479.0" y="92.0" width="135.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_db" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1545.5" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_webapp_0" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1F3864;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="385.3" y="168.0" width="10.0" height="659.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_auth_1" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#44546A;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="668.1" y="199.0" width="10.0" height="163.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_auth_2" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#44546A;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="668.1" y="416.0" width="10.0" height="39.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_api_3" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5B3E96;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="953.4" y="385.0" width="10.0" height="411.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_scoring_4" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#155E56;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="1251.2" y="478.0" width="10.0" height="101.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_db_5" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#8A5A2B;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="1541.5" y="230.0" width="10.0" height="39.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_db_6" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#8A5A2B;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="1541.5" y="602.0" width="10.0" height="39.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_db_7" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#8A5A2B;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="1541.5" y="664.0" width="10.0" height="39.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_db_8" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#8A5A2B;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="1541.5" y="726.0" width="10.0" height="39.0" as="geometry" />
+        </mxCell>
+        <mxCell id="m01" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=0.5000;exitY=0.0313;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.0061;entryDx=0;entryDy=0;" edge="1" parent="1" source="life_applicant" target="bar_webapp_0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m01_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;1&lt;/span&gt; POST /api/applications" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m01">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m02" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.0531;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.0245;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_webapp_0" target="bar_auth_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m02_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;2&lt;/span&gt; load_current_user()" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m02">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m03" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.2147;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.1026;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_auth_1" target="bar_db_5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m03_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;3&lt;/span&gt; get_session(token)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m03">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m04" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.8974;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.4049;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_db_5" target="bar_auth_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m04_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;4&lt;/span&gt; session row" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m04">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m05" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.5951;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.1942;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_auth_1" target="bar_webapp_0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m05_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;5&lt;/span&gt; user + role" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m05">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m06" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.2413;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.7853;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_webapp_0" target="bar_auth_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m06_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;6&lt;/span&gt; csrf_ok()" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m06">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m07" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.9755;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.2883;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_auth_1" target="bar_webapp_0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m07_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;7&lt;/span&gt; true" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m07">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m08" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.3354;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.0097;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_webapp_0" target="bar_api_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m08_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;8&lt;/span&gt; dispatch submit" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m08">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m09" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=0.0000;exitY=0.0852;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.1026;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_api_3" target="bar_auth_2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m09_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;9&lt;/span&gt; require_roles(applicant)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m09">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m10" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=1.0000;exitY=0.8974;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.1606;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_auth_2" target="bar_api_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m10_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;10&lt;/span&gt; role ok" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m10">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m11" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.2360;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.0396;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_api_3" target="bar_scoring_4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m11_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;11&lt;/span&gt; validate + build_features" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m11">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m12" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.3465;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.3114;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_scoring_4" target="bar_api_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m12_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;12&lt;/span&gt; X · 36 features" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m12">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m13" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.3869;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.6535;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_api_3" target="bar_scoring_4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m13_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;13&lt;/span&gt; score(X)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m13">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m14" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.9604;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.4623;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_scoring_4" target="bar_api_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m14_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;14&lt;/span&gt; scores · tier" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m14">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m15" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.5377;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.1026;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_api_3" target="bar_db_6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m15_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;15&lt;/span&gt; record_scored_application()" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m15">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m16" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.8974;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.6131;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_db_6" target="bar_api_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m16_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;16&lt;/span&gt; applicant_id" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m16">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m17" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.6886;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.1026;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_api_3" target="bar_db_7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m17_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;17&lt;/span&gt; create_application()" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m17">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m18" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.8974;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.7640;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_db_7" target="bar_api_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m18_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;18&lt;/span&gt; application_id" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m18">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m19" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.8394;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.1026;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_api_3" target="bar_db_8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m19_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;19&lt;/span&gt; try_export_tables() + audit" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m19">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m20" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.8974;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.9148;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_db_8" target="bar_api_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m20_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;20&lt;/span&gt; ok" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m20">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m21" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.9903;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.9469;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_api_3" target="bar_webapp_0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m21_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;21&lt;/span&gt; 201 · reference · tier" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m21">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m22" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.9939;exitDx=0;exitDy=0;entryX=0.5000;entryY=0.9587;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_webapp_0" target="life_applicant">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m22_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;22&lt;/span&gt; 201 Created" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m22">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="note1" value="&lt;div style='font-size:9.6px;font-weight:bold;color:#8A5A2B;margin-bottom:2px;'&gt;Authentication&lt;/div&gt;&lt;div style='font-size:8.9px;line-height:12.2px;color:#333333;'&gt;before_request resolves the HttpOnly cookie through a SHA-256 token lookup and checks X-CSRF-Token on POST. A missing session gives 401, a bad token 403.&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;size=11;fillColor=#FFF8E1;strokeColor=#B7791F;align=left;verticalAlign=top;spacing=7;" vertex="1" parent="1">
+          <mxGeometry x="40.0" y="862.0" width="508.7" height="84.0" as="geometry" />
+        </mxCell>
+        <mxCell id="note2" value="&lt;div style='font-size:9.6px;font-weight:bold;color:#8A5A2B;margin-bottom:2px;'&gt;Scoring&lt;/div&gt;&lt;div style='font-size:8.9px;line-height:12.2px;color:#333333;'&gt;validate → build_features (36 columns) → both pipelines → recommendation: likely (both good), review (split), refer (both bad). Nothing is written yet.&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;size=11;fillColor=#FFF8E1;strokeColor=#B7791F;align=left;verticalAlign=top;spacing=7;" vertex="1" parent="1">
+          <mxGeometry x="572.7" y="862.0" width="508.7" height="84.0" as="geometry" />
+        </mxCell>
+        <mxCell id="note3" value="&lt;div style='font-size:9.6px;font-weight:bold;color:#8A5A2B;margin-bottom:2px;'&gt;Persistence&lt;/div&gt;&lt;div style='font-size:8.9px;line-height:12.2px;color:#333333;'&gt;record_scored_application inserts Applicant + Prediction; create_application inserts LoanApplication with answers, reference and tier. CSV export and audit follow.&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;size=11;fillColor=#FFF8E1;strokeColor=#B7791F;align=left;verticalAlign=top;spacing=7;" vertex="1" parent="1">
+          <mxGeometry x="1105.3" y="862.0" width="508.7" height="84.0" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="&lt;div style='font-size:12px;font-weight:bold;color:#1F3864;border-bottom:1px solid #C9D2E0;padding-bottom:3px;margin-bottom:5px;'&gt;Notation&lt;/div&gt;&lt;div style='font-size:9.3px;line-height:14px;color:#333333;'&gt;&lt;b&gt;Solid arrow, filled head&lt;/b&gt; — synchronous call, numbered in execution order&lt;br&gt;&lt;b&gt;Dashed arrow, open head&lt;/b&gt; — return value or response (not a new request)&lt;br&gt;&lt;b&gt;Narrow bar&lt;/b&gt; — activation: the participant is executing that call&lt;br&gt;&lt;b&gt;Participant box&lt;/b&gt; — class or module taking part; the dashed line is its lifeline&lt;br&gt;&lt;b&gt;Numbered label&lt;/b&gt; — the position of the message in the overall sequence&lt;br&gt;&lt;b&gt;Note&lt;/b&gt; — constraint, guard or failure path&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#FFFFFF;strokeColor=#8A94A6;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="40.0" y="970.0" width="700.0" height="150.0" as="geometry" />
+        </mxCell>
+        <mxCell id="scope" value="&lt;div style='font-size:9.6px;font-weight:bold;color:#8A5A2B;margin-bottom:2px;'&gt;Scope &amp;amp; conventions&lt;/div&gt;&lt;div style='font-size:8.9px;line-height:12.2px;color:#333333;'&gt;Happy path. 400 validation, 401 no session and 403 bad CSRF or role all return before persistence. Legacy POST /api/submit calls the same submit_application(). db.py opens one transaction per helper; try_export_tables() mirrors the CSV extracts.&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;size=11;fillColor=#FFF8E1;strokeColor=#B7791F;align=left;verticalAlign=top;spacing=7;" vertex="1" parent="1">
+          <mxGeometry x="760.0" y="970.0" width="854.0" height="150.0" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,156 @@
+<mxfile host="app.diagrams.net" agent="opencode" version="24.7.7" type="device">
+  <diagram id="chapter4-preview_score" name="Sequence Diagram — Preview Credit Score">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;div style='font-size:20px;font-weight:bold;color:#1F3864;'&gt;Sequence Diagram — Preview Credit Score&lt;/div&gt;&lt;div style='font-size:11.5px;color:#5A6272;'&gt;SD-1 · Use case: Preview credit score · primary actor: Visitor · read-only preview · A3 landscape · native, editable draw.io&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;spacing=0;strokeColor=none;fillColor=none;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40.0" y="6.0" width="1520.0" height="42.0" as="geometry" />
+        </mxCell>
+        <mxCell id="glyph_visitor" value="" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=none;strokeWidth=1.5;strokeColor=#1F3864;" vertex="1" parent="1">
+          <mxGeometry x="97.0" y="52.0" width="26.0" height="36.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_visitor" value="&lt;b&gt;Visitor&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«actor»&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF1F8;strokeColor=#1F3864;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#1F3864;" vertex="1" parent="1">
+          <mxGeometry x="40.0" y="92.0" width="140.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_visitor" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="109.0" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_webapp" value="&lt;b&gt;WebApp&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«boundary» webapp.py&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF1F8;strokeColor=#1F3864;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#1F3864;" vertex="1" parent="1">
+          <mxGeometry x="378.5" y="92.0" width="150.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_webapp" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="452.5" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_scoring" value="&lt;b&gt;ScoringService&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«service» portal_core.py&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#D9EAE5;strokeColor=#155E56;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#155E56;" vertex="1" parent="1">
+          <mxGeometry x="727.0" y="92.0" width="170.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_scoring" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="811.0" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_refs" value="&lt;b&gt;ReferenceData&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«entity» thresholds &amp; options&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DCEAEE;strokeColor=#0F5E6B;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#0F5E6B;" vertex="1" parent="1">
+          <mxGeometry x="1095.5" y="92.0" width="155.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_refs" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1172.0" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="hdr_models" value="&lt;b&gt;ModelArtifacts&lt;/b&gt;&lt;br&gt;&lt;span style='font-size:8.2px;font-weight:normal;color:#5A6272;'&gt;«entity» trained pipelines&lt;/span&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#DCEAEE;strokeColor=#0F5E6B;strokeWidth=1.4;align=center;verticalAlign=middle;fontSize=11;fontColor=#0F5E6B;" vertex="1" parent="1">
+          <mxGeometry x="1449.0" y="92.0" width="165.0" height="58.0" as="geometry" />
+        </mxCell>
+        <mxCell id="life_models" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#A7B0BD;strokeWidth=1.1;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1530.5" y="150.0" width="2.0" height="702.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_webapp_0" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1F3864;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="448.5" y="176.0" width="10.0" height="512.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_scoring_1" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#155E56;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="807.0" y="232.0" width="10.0" height="64.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_scoring_2" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#155E56;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="807.0" y="344.0" width="10.0" height="288.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_refs_3" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F5E6B;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="1168.0" y="400.0" width="10.0" height="64.0" as="geometry" />
+        </mxCell>
+        <mxCell id="bar_models_4" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0F5E6B;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="1526.5" y="512.0" width="10.0" height="64.0" as="geometry" />
+        </mxCell>
+        <mxCell id="m01" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=0.5000;exitY=0.0427;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.0078;entryDx=0;entryDy=0;" edge="1" parent="1" source="life_visitor" target="bar_webapp_0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m01_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;1&lt;/span&gt; POST /api/score" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m01">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m02" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.1172;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.0625;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_webapp_0" target="bar_scoring_1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m02_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;2&lt;/span&gt; validate(payload)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m02">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m03" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.9375;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.2266;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_scoring_1" target="bar_webapp_0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m03_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;3&lt;/span&gt; p · validated answers" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m03">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m04" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.3359;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.0139;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_webapp_0" target="bar_scoring_2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m04_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;4&lt;/span&gt; evaluate(p)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m04">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m05" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.2083;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.0625;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_scoring_2" target="bar_refs_3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m05_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;5&lt;/span&gt; reference()" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m05">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m06" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.9375;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.4028;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_refs_3" target="bar_scoring_2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m06_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;6&lt;/span&gt; thresholds · amounts · terms" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m06">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m07" style="html=1;endArrow=block;endFill=1;endSize=7;strokeColor=#37474F;strokeWidth=1.25;exitX=1.0000;exitY=0.5972;exitDx=0;exitDy=0;entryX=0.0000;entryY=0.0625;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_scoring_2" target="bar_models_4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m07_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;7&lt;/span&gt; predict_proba(X)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#37474F;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m07">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m08" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.9375;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.7917;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_models_4" target="bar_scoring_2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m08_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;8&lt;/span&gt; p_good · both pipelines" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m08">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m09" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.9861;exitDx=0;exitDy=0;entryX=1.0000;entryY=0.8828;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_scoring_2" target="bar_webapp_0">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m09_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;9&lt;/span&gt; scores · tier · factors · what-if" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m09">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m10" style="html=1;endArrow=open;endFill=0;endSize=7;strokeColor=#5A6272;strokeWidth=1.15;dashed=1;exitX=0.0000;exitY=0.9922;exitDx=0;exitDy=0;entryX=0.5000;entryY=0.7607;entryDx=0;entryDy=0;" edge="1" parent="1" source="bar_webapp_0" target="life_visitor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="m10_l" value="&lt;span style='color:#8A94A6;display:inline-block;width:14px;text-align:right;'&gt;10&lt;/span&gt; 200 JSON · no database write" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=9;fontColor=#5A6272;labelBackgroundColor=#FFFFFF;" vertex="1" connectable="0" parent="m10">
+          <mxGeometry x="0" relative="1" as="geometry">
+            <mxPoint x="0" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="note1" value="&lt;div style='font-size:9.6px;font-weight:bold;color:#8A5A2B;margin-bottom:2px;'&gt;Validation&lt;/div&gt;&lt;div style='font-size:8.9px;line-height:12.2px;color:#333333;'&gt;validate() checks required fields, numeric ranges and cross-field rules (amount versus term). Invalid input returns 400 before either model runs.&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;size=11;fillColor=#FFF8E1;strokeColor=#B7791F;align=left;verticalAlign=top;spacing=7;" vertex="1" parent="1">
+          <mxGeometry x="40.0" y="862.0" width="508.7" height="84.0" as="geometry" />
+        </mxCell>
+        <mxCell id="note2" value="&lt;div style='font-size:9.6px;font-weight:bold;color:#8A5A2B;margin-bottom:2px;'&gt;Scoring&lt;/div&gt;&lt;div style='font-size:8.9px;line-height:12.2px;color:#333333;'&gt;evaluate() builds the feature row, asks both pipelines for p_good, compares each with its tuned threshold and derives likely / review / refer plus the what-if grid.&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;size=11;fillColor=#FFF8E1;strokeColor=#B7791F;align=left;verticalAlign=top;spacing=7;" vertex="1" parent="1">
+          <mxGeometry x="572.7" y="862.0" width="508.7" height="84.0" as="geometry" />
+        </mxCell>
+        <mxCell id="note3" value="&lt;div style='font-size:9.6px;font-weight:bold;color:#8A5A2B;margin-bottom:2px;'&gt;No persistence&lt;/div&gt;&lt;div style='font-size:8.9px;line-height:12.2px;color:#333333;'&gt;No session, no CSRF token and no SQLite write: the preview is stateless and stores nothing. GET /api/meta supplies the dropdown options.&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;size=11;fillColor=#FFF8E1;strokeColor=#B7791F;align=left;verticalAlign=top;spacing=7;" vertex="1" parent="1">
+          <mxGeometry x="1105.3" y="862.0" width="508.7" height="84.0" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="&lt;div style='font-size:12px;font-weight:bold;color:#1F3864;border-bottom:1px solid #C9D2E0;padding-bottom:3px;margin-bottom:5px;'&gt;Notation&lt;/div&gt;&lt;div style='font-size:9.3px;line-height:14px;color:#333333;'&gt;&lt;b&gt;Solid arrow, filled head&lt;/b&gt; — synchronous call, numbered in execution order&lt;br&gt;&lt;b&gt;Dashed arrow, open head&lt;/b&gt; — return value or response (not a new request)&lt;br&gt;&lt;b&gt;Narrow bar&lt;/b&gt; — activation: the participant is executing that call&lt;br&gt;&lt;b&gt;Participant box&lt;/b&gt; — class or module taking part; the dashed line is its lifeline&lt;br&gt;&lt;b&gt;Numbered label&lt;/b&gt; — the position of the message in the overall sequence&lt;br&gt;&lt;b&gt;Note&lt;/b&gt; — constraint, guard or failure path&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#FFFFFF;strokeColor=#8A94A6;strokeWidth=1.2;" vertex="1" parent="1">
+          <mxGeometry x="40.0" y="970.0" width="700.0" height="150.0" as="geometry" />
+        </mxCell>
+        <mxCell id="scope" value="&lt;div style='font-size:9.6px;font-weight:bold;color:#8A5A2B;margin-bottom:2px;'&gt;Scope &amp;amp; conventions&lt;/div&gt;&lt;div style='font-size:8.9px;line-height:12.2px;color:#333333;'&gt;Failure path: 400 for an invalid payload, returned before scoring. The same ScoringService is reused by submission (SD-2), so a preview and a persisted score cannot diverge. Served by webapp.py; no AuthGuard is involved.&lt;/div&gt;" style="shape=note;whiteSpace=wrap;html=1;size=11;fillColor=#FFF8E1;strokeColor=#B7791F;align=left;verticalAlign=top;spacing=7;" vertex="1" parent="1">
+          <mxGeometry x="760.0" y="970.0" width="854.0" height="150.0" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

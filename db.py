@@ -19,10 +19,13 @@ Run once:  python db.py     (creates DB, seeds demo users, loads model_runs + te
 """
 import hashlib
 import json
+import logging
 import os
 import re
 import secrets
 import sqlite3
+import tempfile
+from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -36,6 +39,7 @@ except ImportError:  # pragma: no cover - bcrypt is no longer required
 
 DB_PATH = Path(__file__).resolve().parent / "creditscore.db"
 STAFF_ROLES = ("business_manager", "credit_analyst", "loan_officer")
+logger = logging.getLogger(__name__)
 APPLICANT_ROLE = "applicant"
 ROLES = STAFF_ROLES + (APPLICANT_ROLE,)
 DEFAULT_SESSION_HOURS = int(os.environ.get("SESSION_LIFETIME_HOURS", "12"))
@@ -133,6 +137,21 @@ def _resolve(path=None):
 
 def connect(path=None) -> sqlite3.Connection:
     con = sqlite3.connect(_resolve(path))
+    con.row_factory = sqlite3.Row
+    con.execute("PRAGMA foreign_keys = ON")
+    return con
+
+
+def connect_readonly(path=None) -> sqlite3.Connection:
+    """Open the existing database in strict read-only mode.
+
+    Used by the Power BI exports so reporting can never create, migrate or write
+    to `creditscore.db`. A missing file is an error (no empty database is created).
+    """
+    db_path = Path(_resolve(path)).resolve()
+    if not db_path.exists():
+        raise FileNotFoundError(f"Database not found: {db_path}")
+    con = sqlite3.connect(f"{db_path.as_uri()}?mode=ro", uri=True)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys = ON")
     return con
@@ -526,13 +545,271 @@ def load_model_runs(csv="threshold_comparison.csv", path=None):
                  r.recall_bad, r.f1_bad, r.roc_auc, r.pr_auc_bad))
 
 
+# ------------------------------------------------------- Power BI exports ----
+# The live exports are anchored on `loan_applications`, so the 2,001 bulk-scored
+# `applicants` rows that never became an application cannot leak into them. JSON
+# answers are extracted defensively: a missing or malformed payload yields
+# NULL/0 instead of failing the export.
+LIVE_APPLICATION_COLUMNS = [
+    "application_id", "reference", "user_id", "applicant_id",
+    "tier", "status", "assigned_officer_id", "created_at", "updated_at",
+    "amount", "term", "employment", "account", "bank", "mode", "has_history",
+    "latest_decision", "latest_decision_at", "decision_count", "model_count",
+    "models_agree", "is_live",
+]
+
+LIVE_APPLICATION_SQL = """
+WITH latest_decision AS (
+    SELECT application_id, decision, created_at
+    FROM (
+        SELECT application_id, decision, created_at,
+               ROW_NUMBER() OVER (
+                   PARTITION BY application_id
+                   ORDER BY created_at DESC, decision_id DESC
+               ) AS rn
+        FROM application_decisions
+    )
+    WHERE rn = 1
+),
+decision_counts AS (
+    SELECT application_id, COUNT(*) AS decision_count
+    FROM application_decisions
+    GROUP BY application_id
+),
+model_summary AS (
+    SELECT applicant_id,
+           COUNT(*) AS model_count,
+           COUNT(DISTINCT decision) AS decision_kinds
+    FROM (
+        SELECT p.applicant_id, p.model_name, p.decision,
+               ROW_NUMBER() OVER (
+                   PARTITION BY p.applicant_id, p.model_name
+                   ORDER BY p.prediction_id DESC
+               ) AS rn
+        FROM predictions p
+    )
+    WHERE rn = 1
+    GROUP BY applicant_id
+)
+SELECT
+    a.application_id,
+    a.reference,
+    a.user_id,
+    a.applicant_id,
+    a.tier,
+    a.status,
+    a.assigned_officer_id,
+    a.created_at,
+    a.updated_at,
+    CASE WHEN json_valid(a.answers)
+         THEN json_extract(a.answers, '$.amount') END AS amount,
+    CASE WHEN json_valid(a.answers)
+         THEN json_extract(a.answers, '$.term') END AS term,
+    CASE WHEN json_valid(a.answers)
+         THEN json_extract(a.answers, '$.employment') END AS employment,
+    CASE WHEN json_valid(a.answers)
+         THEN json_extract(a.answers, '$.account') END AS account,
+    CASE WHEN json_valid(a.answers)
+         THEN json_extract(a.answers, '$.bank') END AS bank,
+    CASE WHEN json_valid(a.answers)
+         THEN json_extract(a.answers, '$.mode') END AS mode,
+    CASE WHEN json_valid(a.answers)
+         THEN CASE WHEN json_type(a.answers, '$.history') IN ('object', 'array')
+                   THEN 1 ELSE 0 END
+         ELSE 0 END AS has_history,
+    ld.decision AS latest_decision,
+    ld.created_at AS latest_decision_at,
+    COALESCE(dc.decision_count, 0) AS decision_count,
+    COALESCE(ms.model_count, 0) AS model_count,
+    CASE WHEN COALESCE(ms.model_count, 0) >= 2 AND ms.decision_kinds = 1
+         THEN 1 ELSE 0 END AS models_agree,
+    1 AS is_live
+FROM loan_applications a
+LEFT JOIN latest_decision ld ON ld.application_id = a.application_id
+LEFT JOIN decision_counts dc ON dc.application_id = a.application_id
+LEFT JOIN model_summary ms ON ms.applicant_id = a.applicant_id
+ORDER BY a.application_id
+"""
+
+LIVE_ASSESSMENT_COLUMNS = [
+    "application_id", "applicant_id", "reference", "model_name",
+    "p_bad", "p_good", "threshold", "decision",
+    "tier", "status", "created_at", "is_good",
+]
+
+# ROW_NUMBER keeps exactly one row per application/model (the newest prediction),
+# while a missing model simply produces no row - nothing is fabricated.
+LIVE_ASSESSMENT_SQL = """
+WITH ranked AS (
+    SELECT p.prediction_id, p.applicant_id, p.model_name, p.p_bad, p.p_good,
+           p.threshold, p.decision,
+           ROW_NUMBER() OVER (
+               PARTITION BY p.applicant_id, p.model_name
+               ORDER BY p.prediction_id DESC
+           ) AS rn
+    FROM predictions p
+    JOIN loan_applications a ON a.applicant_id = p.applicant_id
+)
+SELECT
+    a.application_id,
+    a.applicant_id,
+    a.reference,
+    r.model_name,
+    r.p_bad,
+    r.p_good,
+    r.threshold,
+    r.decision,
+    a.tier,
+    a.status,
+    a.created_at,
+    CASE r.decision WHEN 'Good' THEN 1 WHEN 'Bad' THEN 0 END AS is_good
+FROM loan_applications a
+JOIN ranked r ON r.applicant_id = a.applicant_id AND r.rn = 1
+ORDER BY a.application_id, r.model_name
+"""
+
+DECISION_HISTORY_COLUMNS = [
+    "decision_id", "application_id", "officer_id", "decision", "note", "created_at",
+]
+
+DECISION_HISTORY_SQL = """
+SELECT decision_id, application_id, officer_id, decision, note, created_at
+FROM application_decisions
+ORDER BY application_id, created_at, decision_id
+"""
+
+EXPORT_META_COLUMNS = [
+    "exported_at", "live_applications", "live_assessments", "decisions",
+    "max_application_id",
+]
+
+
+def _live_applications(con) -> pd.DataFrame:
+    df = pd.read_sql_query(LIVE_APPLICATION_SQL, con).reindex(
+        columns=LIVE_APPLICATION_COLUMNS)
+    # Nullable ids/terms become floats when pandas sees a NULL; keep them as
+    # integers so the CSV shows `3`, not `3.0`, while still allowing blanks.
+    for column in ("applicant_id", "assigned_officer_id", "term"):
+        df[column] = pd.to_numeric(df[column], errors="coerce").astype("Int64")
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
+    return df
+
+
+def _live_assessments(con) -> pd.DataFrame:
+    return pd.read_sql_query(LIVE_ASSESSMENT_SQL, con).reindex(
+        columns=LIVE_ASSESSMENT_COLUMNS)
+
+
+def _decision_history(con) -> pd.DataFrame:
+    return pd.read_sql_query(DECISION_HISTORY_SQL, con).reindex(
+        columns=DECISION_HISTORY_COLUMNS)
+
+
+def live_applications(path=None) -> pd.DataFrame:
+    """One row per real submitted application, for Power BI.
+
+    Only BI-relevant answer fields are exposed (never the raw JSON or personal
+    details). `latest_decision` is the officer decision with the newest
+    `created_at`/`decision_id`; the full history is exported separately.
+    """
+    with closing(connect_readonly(path)) as con:
+        return _live_applications(con)
+
+
+def live_assessments(path=None) -> pd.DataFrame:
+    """One row per application per stored model prediction (Good/Bad + P(Good))."""
+    with closing(connect_readonly(path)) as con:
+        return _live_assessments(con)
+
+
+def decision_history(path=None) -> pd.DataFrame:
+    """Full officer-decision history; kept separate to avoid fan-out joins."""
+    with closing(connect_readonly(path)) as con:
+        return _decision_history(con)
+
+
+def _write_csv_atomic(frame: pd.DataFrame, target) -> None:
+    """Write a CSV beside its target through a temp file, then replace atomically."""
+    target = Path(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(prefix=target.name + ".", suffix=".tmp",
+                                    dir=target.parent)
+    os.close(fd)
+    try:
+        frame.to_csv(tmp_name, index=False, encoding="utf-8")
+        os.replace(tmp_name, target)
+    except BaseException:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
+
+
 def export_tables(out_dir=".", path=None):
-    """CSV export of every table for Power BI (Text/CSV connector). Password hashes excluded."""
-    with connect(path) as con:
-        for t in ("applicants", "predictions", "model_runs"):
-            pd.read_sql_query(f"SELECT * FROM {t}", con).to_csv(f"{out_dir}/db_{t}.csv", index=False)
-        pd.read_sql_query("SELECT user_id, username, email, role, created_at FROM users", con)\
-          .to_csv(f"{out_dir}/db_users.csv", index=False)
+    """CSV snapshots for Power BI (Text/CSV connector); password hashes excluded.
+
+    Existing outputs are unchanged: `db_applicants.csv`, `db_predictions.csv`,
+    `db_model_runs.csv`, `db_users.csv`. Four live exports are added, all based
+    on read-only queries:
+
+      db_live_application.csv   one row per real loan application
+      db_live_assessment.csv    one row per application/model prediction
+      db_application_decisions.csv  full officer-decision history
+      db_export_meta.csv        export timestamp and reconciliation counts
+
+    Returns `{filename: (Path, row_count)}` so the CLI can print locations.
+    """
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    with closing(connect_readonly(path)) as con:
+        # One read transaction gives all exports a consistent snapshot.
+        con.execute("BEGIN")
+        frames = {
+            "db_applicants.csv": pd.read_sql_query("SELECT * FROM applicants", con),
+            "db_predictions.csv": pd.read_sql_query("SELECT * FROM predictions", con),
+            "db_model_runs.csv": pd.read_sql_query("SELECT * FROM model_runs", con),
+            "db_users.csv": pd.read_sql_query(
+                "SELECT user_id, username, email, role, created_at FROM users", con),
+            "db_live_application.csv": _live_applications(con),
+            "db_live_assessment.csv": _live_assessments(con),
+            "db_application_decisions.csv": _decision_history(con),
+        }
+
+    apps = frames["db_live_application.csv"]
+    meta = pd.DataFrame([{
+        "exported_at": _now(),
+        "live_applications": len(apps),
+        "live_assessments": len(frames["db_live_assessment.csv"]),
+        "decisions": len(frames["db_application_decisions.csv"]),
+        "max_application_id": int(apps["application_id"].max()) if len(apps) else None,
+    }], columns=EXPORT_META_COLUMNS)
+    frames["db_export_meta.csv"] = meta
+
+    written = {}
+    for filename, frame in frames.items():
+        target = out / filename
+        _write_csv_atomic(frame, target)
+        written[filename] = (target, len(frame))
+    return written
+
+
+def try_export_tables(out_dir=None, path=None):
+    """Run export_tables() without letting failures affect committed operations.
+
+    If out_dir is omitted, exports are written beside the resolved database file.
+    Returns a clear success/failure indicator.
+    """
+    try:
+        target_dir = out_dir
+        if target_dir is None:
+            target_dir = Path(_resolve(path)).resolve().parent
+        written = export_tables(out_dir=target_dir, path=path)
+        return {"success": True, "written": written}
+    except Exception as exc:
+        logger.exception("Automatic Power BI CSV export failed")
+        return {"success": False, "error": str(exc)}
 
 
 DEMO_USERS = [("manager", "ChangeMe!1", "business_manager", "manager@loancredit.example"),
@@ -574,6 +851,9 @@ def main(argv=None):
     e = sub.add_parser("set-email", help="give an existing account its sign-in email")
     e.add_argument("username"); e.add_argument("email")
     sub.add_parser("list-users", help="list accounts (never shows passwords)")
+    x = sub.add_parser("export", help="write Power BI CSVs (tables + live assessments)")
+    x.add_argument("--out-dir", default=".",
+                   help="output directory for db_*.csv (default: current directory)")
     args = ap.parse_args(argv)
 
     if args.cmd in (None, "seed"):
@@ -604,6 +884,13 @@ def main(argv=None):
         with connect() as con:
             for r in con.execute("SELECT username, email, role FROM users ORDER BY user_id"):
                 print(f"{r['username']:<20} {str(r['email'] or '-'):<34} {r['role']}")
+    elif args.cmd == "export":
+        try:
+            written = export_tables(args.out_dir)
+        except Exception as exc:
+            raise SystemExit(f"Export failed: {exc}")
+        for filename, (target, rows) in written.items():
+            print(f"{rows:>6} rows  {target}")
 
 
 if __name__ == "__main__":
